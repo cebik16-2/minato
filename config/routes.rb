@@ -1,6 +1,6 @@
 Rails.application.routes.draw do
   devise_for :users
-  resources :sellers do
+  resources :users do
     resources :products # Nested resources for products
   end
   resources :categories

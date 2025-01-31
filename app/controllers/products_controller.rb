@@ -1,6 +1,6 @@
 class ProductsController < ApplicationController
   before_action :set_product, only: %i[ show edit update destroy detach_file ]
-  before_action :set_seller, only: [ :new, :create, :index, :show ]
+  before_action :set_user, only: [ :new, :create, :index, :show ]
 
   # GET /products or /products.json
   def index
@@ -99,15 +99,15 @@ class ProductsController < ApplicationController
       @product = Product.find(params.expect(:id))
     end
 
-    def set_seller
-      if params[:seller_id]
-        @seller = Seller.find(params[:seller_id])  # Find seller by seller_id from URL
+    def set_user
+      if params[:user_id]
+        @user = User.find(params[:user_id])  # Find user by user_id from URL
       end
     end
 
     # Only allow a list of trusted parameters through.
     def product_params
-      params.expect(product: [ :title, :price, :description, :category_id, :seller_id, :sku, :product_type ])
+      params.expect(product: [ :title, :price, :description, :category_id, :user_id, :sku, :product_type ])
     end
 
     # Helper method to handle file attachment logic

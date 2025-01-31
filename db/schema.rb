@@ -49,45 +49,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_01_13_194817) do
     t.datetime "updated_at", null: false
   end
 
-  create_table "product_files", force: :cascade do |t|
-    t.bigint "product_id", null: false
-    t.string "name"
-    t.string "file_type"
-    t.integer "size"
-    t.string "content_type"
-    t.string "url"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["product_id"], name: "index_product_files_on_product_id"
-  end
-
   create_table "products", force: :cascade do |t|
     t.string "title"
     t.decimal "price"
     t.text "description"
     t.bigint "category_id", null: false
+    t.bigint "seller_id", null: false
     t.string "sku"
     t.integer "product_type", comment: "Defines the type of product (e.g., 1 - pickup)"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.bigint "seller_id", null: false
     t.index ["category_id"], name: "index_products_on_category_id"
     t.index ["seller_id"], name: "index_products_on_seller_id"
-  end
-
-  create_table "sellers", force: :cascade do |t|
-    t.string "first_name"
-    t.string "last_name"
-    t.string "country"
-    t.string "city"
-    t.string "district"
-    t.string "address"
-    t.string "phone"
-    t.string "mail"
-    t.text "bio"
-    t.string "profile_picture"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
   end
 
   create_table "users", force: :cascade do |t|
@@ -96,6 +69,24 @@ ActiveRecord::Schema[8.0].define(version: 2025_01_13_194817) do
     t.string "reset_password_token"
     t.datetime "reset_password_sent_at"
     t.datetime "remember_created_at"
+    t.integer "sign_in_count", default: 0, null: false
+    t.datetime "current_sign_in_at"
+    t.datetime "last_sign_in_at"
+    t.string "current_sign_in_ip"
+    t.string "last_sign_in_ip"
+    t.string "confirmation_token"
+    t.datetime "confirmed_at"
+    t.datetime "confirmation_sent_at"
+    t.string "unconfirmed_email"
+    t.integer "failed_attempts", default: 0, null: false
+    t.string "unlock_token"
+    t.datetime "locked_at"
+    t.string "first_name"
+    t.string "last_name"
+    t.string "country"
+    t.string "city"
+    t.string "address"
+    t.string "phone"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["email"], name: "index_users_on_email", unique: true
@@ -104,7 +95,4 @@ ActiveRecord::Schema[8.0].define(version: 2025_01_13_194817) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
-  add_foreign_key "product_files", "products"
-  add_foreign_key "products", "categories"
-  add_foreign_key "products", "sellers"
 end
