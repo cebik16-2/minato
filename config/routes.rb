@@ -4,12 +4,12 @@ Rails.application.routes.draw do
     resources :products # Nested resources for products
   end
   resources :categories
-  resources :products do
-    member do
-      delete "detach_file/:file_id", to: "products#detach_file", as: "detach_file"
+    resources :products do
+      member do
+        delete "detach_file/:file_id", to: "products#detach_file", as: "detach_file"
+      end
     end
-  end
-  get "welcome/index"
+    get "welcome/index"
   root "welcome#index"
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 

@@ -8,7 +8,7 @@ class User < ApplicationRecord
   has_many :products, dependent: :destroy
   has_one_attached :profile_picture
 
-  validates :first_name, :last_name, :country, :city, :address, :email, :phone, presence: true
+  validates :first_name, :last_name, :country, :city, :address, :email, :phone, presence: false
   validates :email, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :phone, uniqueness: true, format: { with: /\A\+?[0-9]{10,15}\z/, message: "must be a valid phone number" }
 
