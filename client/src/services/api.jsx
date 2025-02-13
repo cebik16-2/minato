@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost:5000";
+const BASE_URL = "http://localhost:3000";
 
 export const getListings = async () => {
   const response = await fetch(`${BASE_URL}/listings`);
@@ -85,6 +85,14 @@ export const deleteListing = async (id) => {
 
 export const getUsers = async () => {
   const response = await fetch(`${BASE_URL}/users`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch users");
+  }
+  return await response.jsxon();
+};
+
+export const signUp = async () => {
+  const response = await fetch(`${BASE_URL}/users/sign_up`);
   if (!response.ok) {
     throw new Error("Failed to fetch users");
   }

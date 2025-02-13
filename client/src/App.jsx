@@ -16,6 +16,8 @@ const NotFoundPage = React.lazy(() => import("./pages/notfoundpage/NotFoundPage.
 const Listings = React.lazy(() => import("./pages/listings/Listings.jsx"));
 const ListingDetails = React.lazy(() => import("./pages/listingdetails/ListingDetails.jsx"));
 const FeaturedListings = React.lazy(() => import("./pages/featuredlistings/FeaturedListings.jsx"));
+const Register = React.lazy(() => import("./pages/register/register.jsx"));
+
 
 const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -53,6 +55,7 @@ const App = () => {
           {/* Public Routes */}
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
           {/* Admin Dashboard */}
           <Route path="/admin" element={<AdminDashboardPage />} />

@@ -1,9 +1,9 @@
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
   allow do
-    origins "*"  # Change this to restrict allowed domains (e.g., 'example.com')
-
-    resource "*",
-      headers: :any,
-      methods: [ :get, :post, :put, :patch, :delete, :options, :head ]
+    origins 'http://localhost:5173'  # Allow requests from the React frontend
+    resource '*', 
+      headers: :any, 
+      methods: [:get, :post, :patch, :put, :delete, :options], 
+      credentials: true
   end
 end

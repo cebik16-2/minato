@@ -1,5 +1,7 @@
 source "https://rubygems.org"
 
+# SMTP 
+gem 'net-smtp', '~> 0.5'
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
 gem "rails", "~> 8.0.1"
 # The modern asset pipeline for Rails [https://github.com/rails/propshaft]
@@ -27,8 +29,8 @@ gem "kaminari"
 gem "tzinfo-data", platforms: %i[ windows jruby ]
 
 # Use the database-backed adapters for Rails.cache, Active Job, and Action Cable
-gem "solid_cache"
-gem "solid_queue"
+gem "solid_cache", '0.4.0'
+gem 'solid_queue', '0.6.0'
 gem "solid_cable"
 
 # Reduces boot times through caching; required in config/boot.rb

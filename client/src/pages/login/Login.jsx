@@ -5,7 +5,6 @@ import useLoginForm from "../../hooks/useLoginForm";
 import { LOGIN_MESSAGES, PLACEHOLDERS } from "../../constants/messages";
 import "../../styles/pages/Login.css";
 
-
 const Login = () => {
   const { users } = useUsers();
   const {
@@ -31,6 +30,10 @@ const Login = () => {
     }
   };
 
+  const handleRegister = () => {
+    navigate("/register"); // Navigate to the registration page
+  };
+
   return (
     <div className="login-container">
       <h2>Login</h2>
@@ -52,6 +55,12 @@ const Login = () => {
         {error && <p className="login-error">{error}</p>}
         <button type="submit">Login</button>
       </form>
+      <p className="register-link">
+        Don't have an account?{" "}
+        <button onClick={handleRegister} className="register-button">
+          Register
+        </button>
+      </p>
     </div>
   );
 };
