@@ -298,10 +298,10 @@ GEM
       activejob (>= 7.2)
       activerecord (>= 7.2)
       railties (>= 7.2)
-    solid_cache (0.4.0)
-      activejob (>= 7)
-      activerecord (>= 7)
-      railties (>= 7)
+    solid_cache (1.0.7)
+      activejob (>= 7.2)
+      activerecord (>= 7.2)
+      railties (>= 7.2)
     solid_queue (0.6.0)
       activejob (>= 7.1)
       activerecord (>= 7.1)
@@ -373,7 +373,7 @@ DEPENDENCIES
   rails (~> 8.0.1)
   rubocop-rails-omakase
   solid_cable
-  solid_cache (= 0.4.0)
+  solid_cache (= 1.0.7)
   solid_queue (= 0.6.0)
   stimulus-rails
   thruster
