@@ -1,27 +1,26 @@
-const BASE_URL = "http://localhost:3000";
+const BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:3000";
+
+const handleResponse = async (response) => {
+  if (!response.ok) {
+    const errorMessage = await response.text();
+    throw new Error(`Error ${response.status}: ${errorMessage}`);
+  }
+  return response.json(); // Fixed typo from response.jsxon() to response.json()
+};
 
 export const getListings = async () => {
   const response = await fetch(`${BASE_URL}/listings`);
-  if (!response.ok) {
-    throw new Error("Failed to fetch listings");
-  }
-  return await response.jsxon();
+  return handleResponse(response);
 };
 
 export const getCities = async () => {
   const response = await fetch(`${BASE_URL}/cities`);
-  if (!response.ok) {
-    throw new Error("Failed to fetch cities");
-  }
-  return await response.jsxon();
+  return handleResponse(response);
 };
 
 export const getFavorites = async () => {
   const response = await fetch(`${BASE_URL}/favorites`);
-  if (!response.ok) {
-    throw new Error("Failed to fetch favorites");
-  }
-  return await response.jsxon();
+  return handleResponse(response);
 };
 
 export const addFavorite = async (id) => {
@@ -32,18 +31,14 @@ export const addFavorite = async (id) => {
     },
     body: JSON.stringify({ id }),
   });
-  if (!response.ok) {
-    throw new Error("Failed to add favorite");
-  }
+  return handleResponse(response);
 };
 
 export const removeFavorite = async (id) => {
   const response = await fetch(`${BASE_URL}/favorites/${id}`, {
     method: "DELETE",
   });
-  if (!response.ok) {
-    throw new Error("Failed to remove favorite");
-  }
+  return handleResponse(response);
 };
 
 export const addListing = async (listing) => {
@@ -54,10 +49,7 @@ export const addListing = async (listing) => {
     },
     body: JSON.stringify(listing),
   });
-  if (!response.ok) {
-    throw new Error("Failed to add listing");
-  }
-  return await response.jsxon();
+  return handleResponse(response);
 };
 
 export const updateListing = async (id, updatedData) => {
@@ -68,33 +60,28 @@ export const updateListing = async (id, updatedData) => {
     },
     body: JSON.stringify(updatedData),
   });
-  if (!response.ok) {
-    throw new Error("Failed to update listing");
-  }
-  return await response.jsxon();
+  return handleResponse(response);
 };
 
 export const deleteListing = async (id) => {
   const response = await fetch(`${BASE_URL}/listings/${id}`, {
     method: "DELETE",
   });
-  if (!response.ok) {
-    throw new Error("Failed to delete listing");
-  }
+  return handleResponse(response);
 };
 
 export const getUsers = async () => {
   const response = await fetch(`${BASE_URL}/users`);
-  if (!response.ok) {
-    throw new Error("Failed to fetch users");
-  }
-  return await response.jsxon();
+  return handleResponse(response);
 };
 
-export const signUp = async () => {
-  const response = await fetch(`${BASE_URL}/users/sign_up`);
-  if (!response.ok) {
-    throw new Error("Failed to fetch users");
-  }
-  return await response.jsxon();
+export const signUp = async (userData) => {
+  const response = await fetch(`${BASE_URL}/users/sign_up`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(userData),
+  });
+  return handleResponse(response);
 };
