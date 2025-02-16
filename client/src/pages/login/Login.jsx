@@ -1,37 +1,45 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import useUsers from "../../hooks/useUsers";
+import { loginUser } from "../../services/api";
 import useLoginForm from "../../hooks/useLoginForm";
 import { LOGIN_MESSAGES, PLACEHOLDERS } from "../../constants/messages";
 import "../../styles/pages/Login.css";
 
 const Login = () => {
-  const { users } = useUsers();
   const {
-    username,
+    email, // ✅ Changed from `username` to `email` (since Devise uses email)
     password,
     error,
-    setUsername,
+    setEmail, // ✅ Changed `setUsername` to `setEmail`
     setPassword,
     setError,
   } = useLoginForm();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false); // ✅ Add loading state
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    const user = users.find(
-      (u) => u.username === username && u.password === password
-    );
-    if (user) {
-      localStorage.setItem("loggedInUser", JSON.stringify(user));
-      navigate("/"); // Redirect to the listings page
-    } else {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await loginUser(email, password); // ✅ Call API
+
+      if (data.token) {
+        localStorage.setItem("authToken", data.token); // Store JWT token
+        navigate("/dashboard"); // ✅ Redirect after login
+      } else {
+        setError(LOGIN_MESSAGES.INVALID_CREDENTIALS);
+      }
+    } catch (err) {
       setError(LOGIN_MESSAGES.INVALID_CREDENTIALS);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleRegister = () => {
-    navigate("/register"); // Navigate to the registration page
+    navigate("/register");
   };
 
   return (
@@ -39,10 +47,10 @@ const Login = () => {
       <h2>Login</h2>
       <form onSubmit={handleLogin} className="login-form">
         <input
-          type="text"
-          placeholder={PLACEHOLDERS.USERNAME}
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          type="email"
+          placeholder={PLACEHOLDERS.EMAIL}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           required
         />
         <input
@@ -53,7 +61,9 @@ const Login = () => {
           required
         />
         {error && <p className="login-error">{error}</p>}
-        <button type="submit">Login</button>
+        <button type="submit" disabled={loading}>
+          {loading ? "Logging in..." : "Login"}
+        </button>
       </form>
       <p className="register-link">
         Don't have an account?{" "}

@@ -18,7 +18,8 @@ gem "turbo-rails"
 gem "stimulus-rails"
 # Build JSON APIs with ease [https://github.com/rails/jbuilder]
 gem "jbuilder"
-
+#JWT token
+gem 'jwt'
 # Allows you to generate your JSON in an object-oriented and convention-driven manner.
 gem "active_model_serializers"
 
@@ -62,4 +63,5 @@ group :development do
 end
 
 gem "devise", "~> 4.9"
+gem 'devise-jwt'
 gem "rack-cors"

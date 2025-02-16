@@ -1,18 +1,17 @@
 class User < ApplicationRecord
-  # Include default devise modules. Others available are:
-  # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
+  # Include default devise modules
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :validatable,
-         :trackable, :confirmable, :lockable
+         :trackable, :confirmable, :lockable,
+         :jwt_authenticatable, jwt_revocation_strategy: Devise::JWT::RevocationStrategies::Null
 
   has_many :products, dependent: :destroy
   has_one_attached :profile_picture
 
-  validates :first_name, :last_name, :country, :city, :address, :email, :phone, presence: false
   validates :email, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
-  # validates :phone, uniqueness: true, format: { with: /\A\+?[0-9]{10,15}\z/, message: "must be a valid phone number" }
+  validates :phone, uniqueness: true, format: { with: /\A\+?[0-9]{10,15}\z/ }, allow_blank: true
 
   def full_name
-    "#{first_name} #{last_name}"
+    "#{first_name} #{last_name}".strip
   end
 end

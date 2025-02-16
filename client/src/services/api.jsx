@@ -1,87 +1,186 @@
+import { getAuthToken, logoutUser, setAuthToken } from "../utils/auth";
+
 const BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:3000";
 
+// Helper function to handle API responses
 const handleResponse = async (response) => {
   if (!response.ok) {
+    if (response.status === 401) {
+      console.warn("Unauthorized! Logging out...");
+      logoutUser(); // ✅ Use imported logout function
+      throw new Error("Session expired. Please log in again.");
+    }
+
     const errorMessage = await response.text();
     throw new Error(`Error ${response.status}: ${errorMessage}`);
   }
-  return response.json(); // Fixed typo from response.jsxon() to response.json()
+  return response.json();
 };
 
-export const getListings = async () => {
-  const response = await fetch(`${BASE_URL}/listings`);
-  return handleResponse(response);
+// ---------------- AUTH API ----------------
+
+// User login - stores JWT token
+export const loginUser = async (email, password) => {
+  try {
+    const response = await fetch(`${BASE_URL}/users/sign_in`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ user: { email, password } }),
+    });
+
+    const data = await handleResponse(response);
+
+    if (data.token) {
+      setAuthToken(data.token); // Store token using utils/auth.js function
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Login failed:", error);
+    throw error;
+  }
 };
 
-export const getCities = async () => {
-  const response = await fetch(`${BASE_URL}/cities`);
-  return handleResponse(response);
-};
+// ---------------- USERS API ----------------
 
-export const getFavorites = async () => {
-  const response = await fetch(`${BASE_URL}/favorites`);
-  return handleResponse(response);
-};
+// Fetch all users
+export const getUsers = async () => {
+  const token = getAuthToken();
+  if (!token) throw new Error("No authentication token found.");
 
-export const addFavorite = async (id) => {
-  const response = await fetch(`${BASE_URL}/favorites`, {
-    method: "POST",
+  const response = await fetch(`${BASE_URL}/users`, {
+    method: "GET",
     headers: {
       "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
     },
-    body: JSON.stringify({ id }),
   });
+
   return handleResponse(response);
 };
 
-export const removeFavorite = async (id) => {
-  const response = await fetch(`${BASE_URL}/favorites/${id}`, {
-    method: "DELETE",
-  });
-  return handleResponse(response);
-};
+// Get a single user
+export const getUser = async (id) => {
+  const token = getAuthToken();
+  if (!token) throw new Error("No authentication token found.");
 
-export const addListing = async (listing) => {
-  const response = await fetch(`${BASE_URL}/listings`, {
-    method: "POST",
+  const response = await fetch(`${BASE_URL}/users/${id}`, {
+    method: "GET",
     headers: {
       "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
     },
-    body: JSON.stringify(listing),
   });
+
   return handleResponse(response);
 };
 
-export const updateListing = async (id, updatedData) => {
-  const response = await fetch(`${BASE_URL}/listings/${id}`, {
+// Update user data
+export const updateUser = async (id, userData) => {
+  const token = getAuthToken();
+  if (!token) throw new Error("No authentication token found.");
+
+  const response = await fetch(`${BASE_URL}/users/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
-    },
-    body: JSON.stringify(updatedData),
-  });
-  return handleResponse(response);
-};
-
-export const deleteListing = async (id) => {
-  const response = await fetch(`${BASE_URL}/listings/${id}`, {
-    method: "DELETE",
-  });
-  return handleResponse(response);
-};
-
-export const getUsers = async () => {
-  const response = await fetch(`${BASE_URL}/users`);
-  return handleResponse(response);
-};
-
-export const signUp = async (userData) => {
-  const response = await fetch(`${BASE_URL}/users/sign_up`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
     },
     body: JSON.stringify(userData),
   });
+
+  return handleResponse(response);
+};
+
+// Delete a user
+export const deleteUser = async (id) => {
+  const token = getAuthToken();
+  if (!token) throw new Error("No authentication token found.");
+
+  const response = await fetch(`${BASE_URL}/users/${id}`, {
+    method: "DELETE",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+    },
+  });
+
+  return handleResponse(response);
+};
+
+// ---------------- PRODUCTS API ----------------
+
+export const getUserProducts = async (userId) => {
+  const token = getAuthToken();
+  if (!token) throw new Error("No authentication token found.");
+
+  const response = await fetch(`${BASE_URL}/users/${userId}/products`, {
+    headers: {
+      "Authorization": `Bearer ${token}`,
+    },
+  });
+
+  return handleResponse(response);
+};
+
+export const createUserProduct = async (userId, productData) => {
+  const token = getAuthToken();
+  if (!token) throw new Error("No authentication token found.");
+
+  const response = await fetch(`${BASE_URL}/users/${userId}/products`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
+    },
+    body: JSON.stringify(productData),
+  });
+
+  return handleResponse(response);
+};
+
+export const deleteUserProduct = async (userId, productId) => {
+  const token = getAuthToken();
+  if (!token) throw new Error("No authentication token found.");
+
+  const response = await fetch(`${BASE_URL}/users/${userId}/products/${productId}`, {
+    method: "DELETE",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+    },
+  });
+
+  return handleResponse(response);
+};
+
+// ---------------- CATEGORIES API ----------------
+
+export const getCategories = async () => {
+  const token = getAuthToken();
+  if (!token) throw new Error("No authentication token found.");
+
+  const response = await fetch(`${BASE_URL}/categories`, {
+    headers: {
+      "Authorization": `Bearer ${token}`,
+    },
+  });
+
+  return handleResponse(response);
+};
+
+export const createCategory = async (categoryData) => {
+  const token = getAuthToken();
+  if (!token) throw new Error("No authentication token found.");
+
+  const response = await fetch(`${BASE_URL}/categories`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
+    },
+    body: JSON.stringify(categoryData),
+  });
+
   return handleResponse(response);
 };
