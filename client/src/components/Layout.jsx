@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { AppBar, Toolbar, Button, Typography, Modal, Box } from "@mui/material";
+import { AppBar, Toolbar, Button, Typography, Modal, Box, Tabs, Tab } from "@mui/material";
 import LogoutButton from "./LogoutButton";
 import Login from "../pages/login/Login";
 import Register from "../pages/register/register";
@@ -8,24 +8,24 @@ import "../styles/pages/layout.css";
 
 const Layout = ({ children, isLoggedIn, handleLogin, handleLogout }) => {
   const navigate = useNavigate();
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authTab, setAuthTab] = useState(0);
 
-  const handleAddListing = () => {
+  const handleAddListing = useCallback(() => {
     if (!isLoggedIn) {
       alert("You must be logged in to add a listing.");
       navigate("/login");
       return;
     }
     navigate("/create-listing");
-  };
+  }, [isLoggedIn, navigate]);
 
-  const handleLoginClick = () => {
-    setIsLoginModalOpen(true);
-  };
+  const handleAuthClick = useCallback(() => {
+    setIsAuthModalOpen(true);
+  }, []);
 
-  const handleRegisterClick = () => {
-    setIsRegisterModalOpen(true);
+  const handleAuthTabChange = (event, newValue) => {
+    setAuthTab(newValue);
   };
 
   return (
@@ -51,33 +51,37 @@ const Layout = ({ children, isLoggedIn, handleLogin, handleLogout }) => {
               </Button>
             </>
           ) : (
-            <>
-              <Button color="inherit" onClick={handleLoginClick}>
-                Login
-              </Button>
-              <Button color="inherit" onClick={handleRegisterClick}>
-                Register
-              </Button>
-            </>
+            <Button color="inherit" onClick={handleAuthClick}>
+              Login/Register
+            </Button>
           )}
         </Toolbar>
       </AppBar>
 
       <main>{children}</main>
 
-      <Modal open={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)}>
-        <Box>
-          <Login />
-        </Box>
-      </Modal>
-
-      <Modal open={isRegisterModalOpen} onClose={() => setIsRegisterModalOpen(false)}>
-        <Box>
-          <Register />
-        </Box>
-      </Modal>
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        authTab={authTab}
+        handleAuthTabChange={handleAuthTabChange}
+        handleLogin={handleLogin}
+      />
     </div>
   );
 };
+
+const AuthModal = ({ isOpen, onClose, authTab, handleAuthTabChange, handleLogin }) => (
+  <Modal open={isOpen} onClose={onClose}>
+    <Box>
+      <Tabs value={authTab} onChange={handleAuthTabChange} centered>
+        <Tab label="Login" />
+        <Tab label="Register" />
+      </Tabs>
+      {authTab === 0 && <Login handleLogin={handleLogin} />}
+      {authTab === 1 && <Register />}
+    </Box>
+  </Modal>
+);
 
 export default Layout;

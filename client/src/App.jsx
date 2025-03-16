@@ -35,7 +35,7 @@ const App = () => {
       if (data.token) {
         localStorage.setItem("loggedInUser", JSON.stringify(data));
         setIsLoggedIn(true);
-        navigate("/"); // Redirect to home page after login
+        navigate("/listings"); // Redirect to listings page after login
       }
     } catch (error) {
       alert("Login failed: " + error.message);

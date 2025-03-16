@@ -65,12 +65,6 @@ const Login = () => {
           {loading ? "Logging in..." : "Login"}
         </button>
       </form>
-      <p className="register-link">
-        Don't have an account?{" "}
-        <button onClick={handleRegister} className="register-button">
-          Register
-        </button>
-      </p>
     </div>
   );
 };
