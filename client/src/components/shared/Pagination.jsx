@@ -1,19 +1,13 @@
 import React from "react";
+import { Pagination as MuiPagination } from "@mui/material";
 
 const Pagination = ({ totalPages, currentPage, onPageChange }) => (
-  <div className="pagination">
-    {Array.from({ length: totalPages }, (_, index) => (
-      <button
-        key={index}
-        className={`button pagination-button ${
-          currentPage === index + 1 ? "active" : ""
-        }`}
-        onClick={() => onPageChange(index + 1)}
-      >
-        {index + 1}
-      </button>
-    ))}
-  </div>
+  <MuiPagination
+    count={totalPages}
+    page={currentPage}
+    onChange={(event, page) => onPageChange(page)}
+    color="primary"
+  />
 );
 
 export default React.memo(Pagination);

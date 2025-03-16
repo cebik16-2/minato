@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { Box, Typography, Button, List, ListItem, ListItemText } from "@mui/material";
 import "../styles/pages/myAccount.css";
 
 const MyAccount = ({ user, favorites, listings }) => {
@@ -12,56 +13,67 @@ const MyAccount = ({ user, favorites, listings }) => {
   };
 
   return (
-    <div className="my-account-page">
-      <h1>Welcome, {user.name}!</h1>
+    <Box className="my-account-page" p={3}>
+      <Typography variant="h4" gutterBottom>Welcome, {user.name}!</Typography>
 
       {/* Profile Section */}
-      <div className="profile-section">
-        <h2>Profile</h2>
-        <p><strong>Email:</strong> {user.email}</p>
-        <button onClick={() => navigate("/edit-profile")}>Edit Profile</button>
-      </div>
+      <Box className="profile-section" mb={3}>
+        <Typography variant="h5">Profile</Typography>
+        <Typography variant="body1"><strong>Email:</strong> {user.email}</Typography>
+        <Button variant="contained" color="primary" onClick={() => navigate("/edit-profile")}>
+          Edit Profile
+        </Button>
+      </Box>
 
       {/* Favorites Section */}
-      <div className="favorites-section">
-        <h2>Your Favorites</h2>
+      <Box className="favorites-section" mb={3}>
+        <Typography variant="h5">Your Favorites</Typography>
         {favorites.length > 0 ? (
-          <ul>
+          <List>
             {favorites.map((fav) => (
-              <li key={fav.id}>
-                {fav.title} - <button onClick={() => navigate(`/listing/${fav.id}`)}>View</button>
-              </li>
+              <ListItem key={fav.id}>
+                <ListItemText primary={fav.title} />
+                <Button variant="contained" color="primary" onClick={() => navigate(`/listing/${fav.id}`)}>
+                  View
+                </Button>
+              </ListItem>
             ))}
-          </ul>
+          </List>
         ) : (
-          <p>You have no favorite listings yet.</p>
+          <Typography>You have no favorite listings yet.</Typography>
         )}
-      </div>
+      </Box>
 
       {/* Listings Management */}
-      <div className="listings-section">
-        <h2>Your Listings</h2>
+      <Box className="listings-section" mb={3}>
+        <Typography variant="h5">Your Listings</Typography>
         {listings.length > 0 ? (
-          <ul>
+          <List>
             {listings.map((listing) => (
-              <li key={listing.id}>
-                {listing.title} - 
-                <button onClick={() => navigate(`/listing/${listing.id}`)}>View</button>
-                <button onClick={() => navigate(`/edit-listing/${listing.id}`)}>Edit</button>
-                <button onClick={() => console.log("Delete listing", listing.id)}>Delete</button>
-              </li>
+              <ListItem key={listing.id}>
+                <ListItemText primary={listing.title} />
+                <Button variant="contained" color="primary" onClick={() => navigate(`/listing/${listing.id}`)}>
+                  View
+                </Button>
+                <Button variant="contained" color="secondary" onClick={() => navigate(`/edit-listing/${listing.id}`)}>
+                  Edit
+                </Button>
+                <Button variant="contained" color="error" onClick={() => console.log("Delete listing", listing.id)}>
+                  Delete
+                </Button>
+              </ListItem>
             ))}
-          </ul>
+          </List>
         ) : (
-          <p>You have no listings yet.</p>
+          <Typography>You have no listings yet.</Typography>
         )}
-      </div>
+      </Box>
 
       {/* Logout Button */}
-      <button className="logout-button" onClick={handleLogout}>
+      <Button variant="contained" color="secondary" onClick={handleLogout}>
         Logout
-      </button>
-    </div>
+      </Button>
+    </Box>
   );
 };
 

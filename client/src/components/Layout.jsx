@@ -1,15 +1,13 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { AppBar, Toolbar, Button, Typography, Modal, Box } from "@mui/material";
 import LogoutButton from "./LogoutButton";
-import Modal from "./Modal";
 import Login from "../pages/login/Login";
 import Register from "../pages/register/register";
 import "../styles/pages/layout.css";
 
 const Layout = ({ children, isLoggedIn, handleLogin, handleLogout }) => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
 
@@ -32,60 +30,51 @@ const Layout = ({ children, isLoggedIn, handleLogin, handleLogout }) => {
 
   return (
     <div className="layout">
-      <header className="layout-header">
-        <div className="header-logo">
-          <Link to="/">Minato</Link>
-        </div>
-
-        <nav className="header-nav">
-          <Link to="/FeaturedListings" className="header-btn">
+      <AppBar position="static">
+        <Toolbar>
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+            <Link to="/" style={{ color: 'inherit', textDecoration: 'none' }}>Minato</Link>
+          </Typography>
+          <Button color="inherit" component={Link} to="/FeaturedListings">
             Favorites
-          </Link>
-          <button
-            className="header-btn button-primary"
-            onClick={handleAddListing}
-          >
+          </Button>
+          <Button color="inherit" onClick={handleAddListing}>
             Add Listing
-          </button>
+          </Button>
           {isLoggedIn ? (
             <>
-              <Link to="/my-account" className="header-btn">
+              <Button color="inherit" component={Link} to="/my-account">
                 My Account
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="header-btn button-primary"
-              >
+              </Button>
+              <Button color="inherit" onClick={handleLogout}>
                 Logout
-              </button>
+              </Button>
             </>
           ) : (
             <>
-              <button
-                onClick={handleLoginClick}
-                className="header-btn button-primary"
-              >
+              <Button color="inherit" onClick={handleLoginClick}>
                 Login
-              </button>
-              <button
-                onClick={handleRegisterClick}
-                className="header-btn button-primary"
-              >
+              </Button>
+              <Button color="inherit" onClick={handleRegisterClick}>
                 Register
-              </button>
+              </Button>
             </>
           )}
-        </nav>
-      </header>
+        </Toolbar>
+      </AppBar>
 
       <main>{children}</main>
 
-      <Modal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)}>
-        <Login />
+      <Modal open={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)}>
+        <Box>
+          <Login />
+        </Box>
       </Modal>
 
-      <Modal isOpen={isRegisterModalOpen} onClose={() => setIsRegisterModalOpen(false)}>
-        <Register />
+      <Modal open={isRegisterModalOpen} onClose={() => setIsRegisterModalOpen(false)}>
+        <Box>
+          <Register />
+        </Box>
       </Modal>
     </div>
   );

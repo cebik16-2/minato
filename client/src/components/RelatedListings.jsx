@@ -1,29 +1,34 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { Box, Typography, Button, Card, CardContent } from "@mui/material";
 import { LISTING_DETAILS_MESSAGES } from "../constants/listingDetailsMessages";
 
 const RelatedListings = ({ listings }) => {
   const navigate = useNavigate();
 
   return (
-    <div className="related-listings">
+    <Box className="related-listings" mt={3}>
       {listings.length > 0 ? (
         listings.map((item) => (
-          <div key={item.id} className="related-listing-card">
-            <h4>{item.title}</h4>
-            <p><strong>Price:</strong> ${item.price}</p>
-            <button
-              onClick={() => navigate(`/listing/${item.id}`)}
-              className="view-details-button"
-            >
-              View Details
-            </button>
-          </div>
+          <Card key={item.id} className="related-listing-card" variant="outlined" mb={2}>
+            <CardContent>
+              <Typography variant="h6">{item.title}</Typography>
+              <Typography variant="body1"><strong>Price:</strong> ${item.price}</Typography>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => navigate(`/listing/${item.id}`)}
+                className="view-details-button"
+              >
+                View Details
+              </Button>
+            </CardContent>
+          </Card>
         ))
       ) : (
-        <p>{LISTING_DETAILS_MESSAGES.NO_RELATED_LISTINGS}</p>
+        <Typography>{LISTING_DETAILS_MESSAGES.NO_RELATED_LISTINGS}</Typography>
       )}
-    </div>
+    </Box>
   );
 };
 

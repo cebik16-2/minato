@@ -1,10 +1,10 @@
 import React, { Suspense, useState, useEffect } from "react";
 import { Route, Routes, useNavigate } from "react-router-dom";
 import Layout from "./components/Layout.jsx";
-import useUsers from "./hooks/useUsers.jsx";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage.jsx";
 import CreateEditListingPage from "./pages/createlisting/CreateListing.jsx";
 import { loginUser } from "./services/api.jsx";
+import { CircularProgress } from "@mui/material";
 
 const ListingsAdmin = React.lazy(() => import("./pages/admin/ListingsAdmin.jsx"));
 const UsersAdmin = React.lazy(() => import("./pages/admin/UsersAdmin.jsx"));
@@ -50,7 +50,7 @@ const App = () => {
 
   return (
     <Layout isLoggedIn={isLoggedIn} handleLogin={handleLogin} handleLogout={handleLogout}>
-      <Suspense fallback={<div>Loading...</div>}>
+      <Suspense fallback={<CircularProgress />}>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/admin" element={<AdminDashboardPage />} />
@@ -62,6 +62,8 @@ const App = () => {
           <Route path="/listing/:id" element={<ListingDetails />} />
           <Route path="/create-listing" element={<CreateEditListingPage />} />
           <Route path="/featuredlistings" element={<FeaturedListings listings={[]} />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>

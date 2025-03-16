@@ -1,15 +1,22 @@
 import React from "react";
 import PropTypes from "prop-types";
+import { Card, CardContent, Typography, Button } from "@mui/material";
 
 const DashboardCard = ({ title, description, buttonText, onClick }) => {
   return (
-    <div className="dashboard-card">
-      <h2>{title}</h2>
-      <p>{description}</p>
-      <button className="dashboard-button" onClick={onClick}>
-        {buttonText}
-      </button>
-    </div>
+    <Card className="dashboard-card">
+      <CardContent>
+        <Typography variant="h5" component="div">
+          {title}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {description}
+        </Typography>
+        <Button variant="contained" color="primary" onClick={onClick}>
+          {buttonText}
+        </Button>
+      </CardContent>
+    </Card>
   );
 };
 

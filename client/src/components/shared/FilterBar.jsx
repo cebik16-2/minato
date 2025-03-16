@@ -1,4 +1,5 @@
 import React from "react";
+import { TextField, Slider, Select, MenuItem, InputLabel, FormControl } from "@mui/material";
 
 const FilterBar = ({
   cities,
@@ -12,54 +13,51 @@ const FilterBar = ({
   setSortOption,
 }) => (
   <div className="filter-group">
-    <input
-      type="text"
-      className="search-input"
-      placeholder="Search by title..."
+    <TextField
+      label="Search by title"
+      variant="outlined"
       value={searchQuery}
       onChange={(e) => setSearchQuery(e.target.value)}
+      fullWidth
+      margin="normal"
     />
-    <label>
-      Price Range:
-      <input
-        type="range"
-        className="price-range-input"
-        min="0"
-        max="2000"
-        value={priceRange[1]}
-        onChange={(e) => setPriceRange([0, Number(e.target.value)])}
+    <FormControl fullWidth margin="normal">
+      <InputLabel>Price Range</InputLabel>
+      <Slider
+        value={priceRange}
+        onChange={(e, newValue) => setPriceRange(newValue)}
+        valueLabelDisplay="auto"
+        min={0}
+        max={2000}
       />
-      {` Up to $${priceRange[1]}`}
-    </label>
-    <label>
-      Location:
-      <select
+    </FormControl>
+    <FormControl fullWidth margin="normal">
+      <InputLabel>Location</InputLabel>
+      <Select
         value={location}
-        className="location-select"
         onChange={(e) => setLocation(e.target.value)}
       >
-        <option value="">All Locations</option>
+        <MenuItem value="">All Locations</MenuItem>
         {cities.map((city) => (
-          <option key={city.id} value={city.name}>
+          <MenuItem key={city.id} value={city.name}>
             {city.name}
-          </option>
+          </MenuItem>
         ))}
-      </select>
-    </label>
-    <label>
-      Sort By:
-      <select
+      </Select>
+    </FormControl>
+    <FormControl fullWidth margin="normal">
+      <InputLabel>Sort By</InputLabel>
+      <Select
         value={sortOption}
-        className="sort-select"
         onChange={(e) => setSortOption(e.target.value)}
       >
-        <option value="">None</option>
-        <option value="priceLowToHigh">Price: Low to High</option>
-        <option value="priceHighToLow">Price: High to Low</option>
-        <option value="titleAsc">Title: A-Z</option>
-        <option value="titleDesc">Title: Z-A</option>
-      </select>
-    </label>
+        <MenuItem value="">None</MenuItem>
+        <MenuItem value="priceLowToHigh">Price: Low to High</MenuItem>
+        <MenuItem value="priceHighToLow">Price: High to Low</MenuItem>
+        <MenuItem value="titleAsc">Title: A-Z</MenuItem>
+        <MenuItem value="titleDesc">Title: Z-A</MenuItem>
+      </Select>
+    </FormControl>
   </div>
 );
 

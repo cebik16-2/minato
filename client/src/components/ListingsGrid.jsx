@@ -1,17 +1,17 @@
 import React from "react";
 import Listing from "./Listing"; // Assuming a reusable Listing component exists
-//import "../../styles/components/ListingsGrid.css";
+import { Grid } from "@mui/material";
 import "../styles/pages/ListingsGrid.css";
 
 const ListingsGrid = ({ listings }) => {
   return (
-    <div className="listings-grid">
+    <Grid container spacing={2} className="listings-grid">
       {listings.map((listing) => (
-        <div key={listing.id} className="listing-card">
-          <p>Listing ID: {listing.id}</p>
-        </div>
+        <Grid item key={listing.id} xs={12} sm={6} md={4} className="listing-card">
+          <Listing {...listing} />
+        </Grid>
       ))}
-    </div>
+    </Grid>
   );
 };
 

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import HeroSection from "../../components/HeroSection";
 import FeaturedListings from "../featuredlistings/FeaturedListings";
 import { getListings } from "../../services/api";
+import { CircularProgress, Box, Typography } from "@mui/material";
 import "../../styles/pages/HomePage.css";
 
 const HomePage = () => {
@@ -26,14 +27,14 @@ const HomePage = () => {
   }, []);
 
   return (
-    <div className="homepage">
+    <Box className="homepage">
       <HeroSection />
       {loading ? (
-        <p>Loading featured listings...</p>
+        <CircularProgress />
       ) : (
         <FeaturedListings listings={featuredListings} />
       )}
-    </div>
+    </Box>
   );
 };
 

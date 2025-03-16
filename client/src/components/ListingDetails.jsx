@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getListings } from "../services/api";
+import { Box, Typography, Button, CircularProgress } from "@mui/material";
 import "../styles/components/ListingsGrid.css"; // Verify `ListingsGrid.css` exists
-
 
 const ListingDetails = () => {
   const { id } = useParams(); // Get the listing ID from the URL
@@ -37,23 +37,17 @@ const ListingDetails = () => {
     fetchListing();
   }, [id]);
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>{error}</p>;
+  if (loading) return <CircularProgress />;
+  if (error) return <Typography color="error">{error}</Typography>;
 
   return (
-    <div className="listing-details">
-      <h2>{listing.title}</h2>
-      <p>
-        <strong>Price:</strong> ${listing.price}
-      </p>
-      <p>
-        <strong>Location:</strong> {listing.location}
-      </p>
-      <p>
-        <strong>Description:</strong> {listing.description}
-      </p>
-      <h3>Images</h3>
-      <div className="images-container">
+    <Box className="listing-details">
+      <Typography variant="h4" gutterBottom>{listing.title}</Typography>
+      <Typography variant="body1"><strong>Price:</strong> ${listing.price}</Typography>
+      <Typography variant="body1"><strong>Location:</strong> {listing.location}</Typography>
+      <Typography variant="body1"><strong>Description:</strong> {listing.description}</Typography>
+      <Typography variant="h5" gutterBottom>Images</Typography>
+      <Box className="images-container">
         {listing.images.map((image, index) => (
           <img
             key={index}
@@ -62,32 +56,31 @@ const ListingDetails = () => {
             className="listing-image"
           />
         ))}
-      </div>
-      <button className="back-button" onClick={() => window.history.back()}>
+      </Box>
+      <Button variant="contained" color="primary" onClick={() => window.history.back()}>
         Back to Listings
-      </button>
-      <h3>Related Listings</h3>
-      <div className="related-listings">
+      </Button>
+      <Typography variant="h5" gutterBottom>Related Listings</Typography>
+      <Box className="related-listings">
         {relatedListings.length > 0 ? (
           relatedListings.map((related) => (
-            <div className="related-card" key={related.id}>
-              <h4>{related.title}</h4>
-              <p>
-                <strong>Price:</strong> ${related.price}
-              </p>
-              <button
-                className="view-details-button"
+            <Box className="related-card" key={related.id}>
+              <Typography variant="h6">{related.title}</Typography>
+              <Typography variant="body1"><strong>Price:</strong> ${related.price}</Typography>
+              <Button
+                variant="contained"
+                color="primary"
                 onClick={() => (window.location.href = `/listing/${related.id}`)}
               >
                 View Details
-              </button>
-            </div>
+              </Button>
+            </Box>
           ))
         ) : (
-          <p>No related listings found.</p>
+          <Typography>No related listings found.</Typography>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 };
 

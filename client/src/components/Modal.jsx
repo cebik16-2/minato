@@ -1,19 +1,19 @@
 import React from "react";
 import PropTypes from "prop-types";
+import { Modal as MuiModal, Box, IconButton } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import "../styles/components/Modal.css";
 
 const Modal = ({ isOpen, onClose, children }) => {
-  if (!isOpen) return null;
-
   return (
-    <div className="modal-overlay">
-      <div className="modal-content">
-        <button className="modal-close" onClick={onClose}>
-          &times;
-        </button>
+    <MuiModal open={isOpen} onClose={onClose}>
+      <Box className="modal-content">
+        <IconButton className="modal-close" onClick={onClose}>
+          <CloseIcon />
+        </IconButton>
         {children}
-      </div>
-    </div>
+      </Box>
+    </MuiModal>
   );
 };
 
