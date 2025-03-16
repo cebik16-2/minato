@@ -184,3 +184,44 @@ export const createCategory = async (categoryData) => {
 
   return handleResponse(response);
 };
+
+// ---------------- LISTINGS API ----------------
+
+export const getListings = async () => {
+  const token = getAuthToken();
+  if (!token) throw new Error("No authentication token found.");
+
+  const response = await fetch(`${BASE_URL}/listings`, {
+    headers: {
+      "Authorization": `Bearer ${token}`,
+    },
+  });
+
+  return handleResponse(response);
+};
+
+export const getCities = async () => {
+  const token = getAuthToken();
+  if (!token) throw new Error("No authentication token found.");
+
+  const response = await fetch(`${BASE_URL}/cities`, {
+    headers: {
+      "Authorization": `Bearer ${token}`,
+    },
+  });
+
+  return handleResponse(response);
+};
+
+export const getFavorites = async () => {
+  const token = getAuthToken();
+  if (!token) throw new Error("No authentication token found.");
+
+  const response = await fetch(`${BASE_URL}/favorites`, {
+    headers: {
+      "Authorization": `Bearer ${token}`,
+    },
+  });
+
+  return handleResponse(response);
+};

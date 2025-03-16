@@ -1,10 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import LogoutButton from "./LogoutButton"; // Assuming you have this component
-import "../styles/pages/layout.css"; // Import CSS for styling
+import LogoutButton from "./LogoutButton";
+import Modal from "./Modal";
+import Login from "../pages/login/Login";
+import Register from "../pages/register/register";
+import "../styles/pages/layout.css";
 
 const Layout = ({ children, isLoggedIn, handleLogin, handleLogout }) => {
   const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
 
   const handleAddListing = () => {
     if (!isLoggedIn) {
@@ -15,9 +22,16 @@ const Layout = ({ children, isLoggedIn, handleLogin, handleLogout }) => {
     navigate("/create-listing");
   };
 
+  const handleLoginClick = () => {
+    setIsLoginModalOpen(true);
+  };
+
+  const handleRegisterClick = () => {
+    setIsRegisterModalOpen(true);
+  };
+
   return (
     <div className="layout">
-      {/* Header Section */}
       <header className="layout-header">
         <div className="header-logo">
           <Link to="/">Minato</Link>
@@ -46,18 +60,33 @@ const Layout = ({ children, isLoggedIn, handleLogin, handleLogout }) => {
               </button>
             </>
           ) : (
-            <button
-              onClick={handleLogin}
-              className="header-btn button-primary"
-            >
-              Login
-            </button>
+            <>
+              <button
+                onClick={handleLoginClick}
+                className="header-btn button-primary"
+              >
+                Login
+              </button>
+              <button
+                onClick={handleRegisterClick}
+                className="header-btn button-primary"
+              >
+                Register
+              </button>
+            </>
           )}
         </nav>
       </header>
 
-      {/* Main Content Section */}
       <main>{children}</main>
+
+      <Modal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)}>
+        <Login />
+      </Modal>
+
+      <Modal isOpen={isRegisterModalOpen} onClose={() => setIsRegisterModalOpen(false)}>
+        <Register />
+      </Modal>
     </div>
   );
 };

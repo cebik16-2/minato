@@ -3,5 +3,5 @@
     "jsx": "react-jsx",
     "allowJs": true
   },
-  "include": ["src/**/*.jsx"]
+  "include": ["src/**/*.jsx", "src/pages/login/Login.jsx", "src/pages/register/register.jsx"]
 }
