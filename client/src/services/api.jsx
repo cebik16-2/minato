@@ -197,7 +197,14 @@ export const getListings = async () => {
     },
   });
 
-  return handleResponse(response);
+  const data = await handleResponse(response);
+
+  // ✅ Ensure the return is always an array
+  if (Array.isArray(data)) return data;
+  if (data?.listings && Array.isArray(data.listings)) return data.listings;
+
+  console.warn("Unexpected listings format:", data);
+  return []; // Return empty array to avoid crash
 };
 
 export const getCities = async () => {

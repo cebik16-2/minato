@@ -14,14 +14,27 @@ const useListings = () => {
           getCities(),
           getFavorites(),
         ]);
-        setListings(listingsData);
-        setCities(citiesData);
-        setFavorites(favoritesData);
+  
+        const normalizedListings = Array.isArray(listingsData)
+          ? listingsData
+          : listingsData?.listings || [];
+  
+        const normalizedCities = Array.isArray(citiesData)
+          ? citiesData
+          : citiesData?.cities || [];
+  
+        const normalizedFavorites = Array.isArray(favoritesData)
+          ? favoritesData
+          : favoritesData?.favorites || [];
+  
+        setListings(normalizedListings);
+        setCities(normalizedCities);
+        setFavorites(normalizedFavorites);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
     };
-
+  
     fetchData();
   }, []);
 
@@ -29,3 +42,5 @@ const useListings = () => {
 };
 
 export default useListings;
+
+

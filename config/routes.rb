@@ -1,24 +1,26 @@
 Rails.application.routes.draw do
   devise_for :users, controllers: { sessions: "users/sessions" }
-  resources :users, only: [:index, :show]
-  resources :users do
+  
+  resources :users, only: [:index, :show] do
     resources :products # Nested resources for products
   end
+
+  resources :favorites, only: [:index, :create, :destroy] # adjust actions as needed
+  resources :cities, only: [:index] # assuming you just need to list them
   resources :categories
-    resources :products do
-      member do
-        delete "detach_file/:file_id", to: "products#detach_file", as: "detach_file"
-      end
+
+  resources :products do
+    member do
+      delete "detach_file/:file_id", to: "products#detach_file", as: "detach_file"
     end
-    get "welcome/index"
+  end
+
+  resources :listings, only: [:index, :show] # Add this line to create a /listings endpoint
+
+  get "welcome/index"
   root "welcome#index"
-  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
-  
-  # ✅ Add this line to create a /listings endpoint
-  resources :listings, only: [:index, :show]
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
-  # Can be used by load balancers and uptime monitors to verify that the app is live.
   get "up" => "rails/health#show", as: :rails_health_check
 
   # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AppBar, Toolbar, Button, Typography, Modal, Box, Tabs, Tab } from "@mui/material";
 import LogoutButton from "./LogoutButton";
@@ -11,7 +11,12 @@ const Layout = ({ children, isLoggedIn, handleLogin, handleLogout }) => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authTab, setAuthTab] = useState(0);
 
+  useEffect(() => {
+    console.log("Layout component rendered. isLoggedIn:", isLoggedIn);
+  }, [isLoggedIn]);
+
   const handleAddListing = useCallback(() => {
+    console.log("handleAddListing called. isLoggedIn:", isLoggedIn);
     if (!isLoggedIn) {
       alert("You must be logged in to add a listing.");
       navigate("/login");

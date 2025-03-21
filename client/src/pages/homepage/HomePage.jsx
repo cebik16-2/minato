@@ -13,11 +13,12 @@ const HomePage = () => {
     const fetchFeaturedListings = async () => {
       try {
         const listings = await getListings();
-        // Assuming featured listings are tagged in the API response
-        const featured = listings.filter((listing) => listing.isFeatured);
+        const safeListings = Array.isArray(listings) ? listings : []; // ✅ guard here
+        const featured = safeListings.filter((listing) => listing.isFeatured);
         setFeaturedListings(featured);
       } catch (error) {
         console.error("Error fetching featured listings:", error);
+        setFeaturedListings([]); // optional: avoid undefined state
       } finally {
         setLoading(false);
       }

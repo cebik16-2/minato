@@ -1,7 +1,7 @@
 import React, { Suspense, useState, useEffect } from "react";
 import { Route, Routes, useNavigate } from "react-router-dom";
 import Layout from "./components/Layout.jsx";
-import AdminDashboardPage from "./pages/admin/AdminDashboardPage.jsx";
+import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import CreateEditListingPage from "./pages/createlisting/CreateListing.jsx";
 import { loginUser } from "./services/api.jsx";
 import { CircularProgress } from "@mui/material";
@@ -61,7 +61,7 @@ const App = () => {
           <Route path="/listings" element={<Listings />} />
           <Route path="/listing/:id" element={<ListingDetails />} />
           <Route path="/create-listing" element={<CreateEditListingPage />} />
-          <Route path="/featuredlistings" element={<FeaturedListings listings={[]} />} />
+          <Route path="/featuredlistings" element={<FeaturedListings />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="*" element={<NotFoundPage />} />

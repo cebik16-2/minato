@@ -5,29 +5,30 @@ import useLoginForm from "../../hooks/useLoginForm";
 import { LOGIN_MESSAGES, PLACEHOLDERS } from "../../constants/messages";
 import "../../styles/pages/Login.css";
 
-const Login = () => {
+const Login = ({ handleLogin }) => {
   const {
-    email, // ✅ Changed from `username` to `email` (since Devise uses email)
+    email,
     password,
     error,
-    setEmail, // ✅ Changed `setUsername` to `setEmail`
+    setEmail,
     setPassword,
     setError,
   } = useLoginForm();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false); // ✅ Add loading state
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
-      const data = await loginUser(email, password); // ✅ Call API
+      const data = await loginUser(email, password);
 
       if (data.token) {
-        localStorage.setItem("authToken", data.token); // Store JWT token
-        navigate("/dashboard"); // ✅ Redirect after login
+        localStorage.setItem("authToken", data.token);
+        handleLogin(email, password); // Call handleLogin from props
+        navigate("/admin"); // Redirect after login
       } else {
         setError(LOGIN_MESSAGES.INVALID_CREDENTIALS);
       }
@@ -45,7 +46,7 @@ const Login = () => {
   return (
     <div className="login-container">
       <h2>Login</h2>
-      <form onSubmit={handleLogin} className="login-form">
+      <form onSubmit={handleSubmit} className="login-form">
         <input
           type="email"
           placeholder={PLACEHOLDERS.EMAIL}

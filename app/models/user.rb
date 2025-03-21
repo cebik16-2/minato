@@ -6,6 +6,11 @@ class User < ApplicationRecord
          :jwt_authenticatable, jwt_revocation_strategy: Devise::JWT::RevocationStrategies::Null
 
   has_many :products, dependent: :destroy
+
+  has_many :favorites, dependent: :destroy
+  
+  has_many :favorite_products, through: :favorites, source: :product
+
   has_one_attached :profile_picture
 
   validates :email, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
