@@ -3,7 +3,7 @@ import { Route, Routes, useNavigate } from "react-router-dom";
 import Layout from "./components/Layout.jsx";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import CreateEditListingPage from "./pages/createlisting/CreateListing.jsx";
-import { loginUser } from "./services/api.jsx";
+import { loginUser } from "./services/index.jsx";
 import { CircularProgress } from "@mui/material";
 
 const ListingsAdmin = React.lazy(() => import("./pages/admin/ListingsAdmin.jsx"));
