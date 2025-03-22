@@ -1,78 +1,147 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Box, Typography, Button, List, ListItem, ListItemText } from "@mui/material";
-import "../styles/pages/myAccount.css";
+import {
+  Box,
+  Typography,
+  Button,
+  List,
+  ListItem,
+  ListItemText,
+  Stack,
+  Divider,
+  Grid,
+} from "@mui/material";
 
-const MyAccount = ({ user, favorites, listings }) => {
+const MyAccount = ({ user, favorites = [], listings = [] }) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    // Clear user session (e.g., remove token, reset state)
     console.log("User logged out");
+    localStorage.removeItem("loggedInUser");
     navigate("/login");
   };
 
   return (
-    <Box className="my-account-page" p={3}>
-      <Typography variant="h4" gutterBottom>Welcome, {user.name}!</Typography>
+    <Box sx={{ maxWidth: 900, mx: "auto", p: { xs: 2, md: 4 } }}>
+      <Typography variant="h4" gutterBottom>
+        Welcome, {user.name}!
+      </Typography>
 
       {/* Profile Section */}
-      <Box className="profile-section" mb={3}>
-        <Typography variant="h5">Profile</Typography>
-        <Typography variant="body1"><strong>Email:</strong> {user.email}</Typography>
-        <Button variant="contained" color="primary" onClick={() => navigate("/edit-profile")}>
+      <Box sx={{ mb: 5 }}>
+        <Typography variant="h5" gutterBottom>
+          Profile
+        </Typography>
+        <Typography variant="body1" sx={{ mb: 1 }}>
+          <strong>Email:</strong> {user.email}
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => navigate("/edit-profile")}
+        >
           Edit Profile
         </Button>
       </Box>
 
+      <Divider sx={{ mb: 4 }} />
+
       {/* Favorites Section */}
-      <Box className="favorites-section" mb={3}>
-        <Typography variant="h5">Your Favorites</Typography>
+      <Box sx={{ mb: 5 }}>
+        <Typography variant="h5" gutterBottom>
+          Your Favorites
+        </Typography>
+
         {favorites.length > 0 ? (
           <List>
             {favorites.map((fav) => (
-              <ListItem key={fav.id}>
+              <ListItem
+                key={fav.id}
+                secondaryAction={
+                  <Button
+                    variant="outlined"
+                    onClick={() => navigate(`/listing/${fav.id}`)}
+                  >
+                    View
+                  </Button>
+                }
+              >
                 <ListItemText primary={fav.title} />
-                <Button variant="contained" color="primary" onClick={() => navigate(`/listing/${fav.id}`)}>
-                  View
-                </Button>
               </ListItem>
             ))}
           </List>
         ) : (
-          <Typography>You have no favorite listings yet.</Typography>
+          <Typography color="text.secondary">
+            You have no favorite listings yet.
+          </Typography>
         )}
       </Box>
 
-      {/* Listings Management */}
-      <Box className="listings-section" mb={3}>
-        <Typography variant="h5">Your Listings</Typography>
+      <Divider sx={{ mb: 4 }} />
+
+      {/* Listings Management Section */}
+      <Box sx={{ mb: 5 }}>
+        <Typography variant="h5" gutterBottom>
+          Your Listings
+        </Typography>
+
         {listings.length > 0 ? (
           <List>
             {listings.map((listing) => (
-              <ListItem key={listing.id}>
+              <ListItem
+                key={listing.id}
+                secondaryAction={
+                  <Stack direction="row" spacing={1}>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => navigate(`/listing/${listing.id}`)}
+                    >
+                      View
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="contained"
+                      color="primary"
+                      onClick={() => navigate(`/edit-listing/${listing.id}`)}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="contained"
+                      color="error"
+                      onClick={() => console.log("Delete listing", listing.id)}
+                    >
+                      Delete
+                    </Button>
+                  </Stack>
+                }
+              >
                 <ListItemText primary={listing.title} />
-                <Button variant="contained" color="primary" onClick={() => navigate(`/listing/${listing.id}`)}>
-                  View
-                </Button>
-                <Button variant="contained" color="secondary" onClick={() => navigate(`/edit-listing/${listing.id}`)}>
-                  Edit
-                </Button>
-                <Button variant="contained" color="error" onClick={() => console.log("Delete listing", listing.id)}>
-                  Delete
-                </Button>
               </ListItem>
             ))}
           </List>
         ) : (
-          <Typography>You have no listings yet.</Typography>
+          <Typography color="text.secondary">
+            You have no listings yet.
+          </Typography>
         )}
       </Box>
 
+      <Divider sx={{ mb: 4 }} />
+
       {/* Logout Button */}
-      <Button variant="contained" color="secondary" onClick={handleLogout}>
-        Logout
-      </Button>
+      <Box sx={{ textAlign: "center" }}>
+        <Button
+          variant="contained"
+          color="secondary"
+          onClick={handleLogout}
+          size="large"
+        >
+          Logout
+        </Button>
+      </Box>
     </Box>
   );
 };

@@ -1,17 +1,26 @@
 import React from "react";
-import Listing from "./Listing"; // Assuming a reusable Listing component exists
-import { Grid } from "@mui/material";
-import "../styles/pages/ListingsGrid.css";
+import { Grid, Box, Typography } from "@mui/material";
+import Listing from "./Listing";
 
-const ListingsGrid = ({ listings }) => {
+const ListingsGrid = ({ listings = [] }) => {
+  const hasListings = listings.length > 0;
+
   return (
-    <Grid container spacing={2} className="listings-grid">
-      {listings.map((listing) => (
-        <Grid item key={listing.id} xs={12} sm={6} md={4} className="listing-card">
-          <Listing {...listing} />
+    <Box sx={{ px: { xs: 2, md: 4 }, py: { xs: 2, md: 4 } }}>
+      {hasListings ? (
+        <Grid container spacing={3}>
+          {listings.map((listing) => (
+            <Grid item key={listing.id} xs={12} sm={6} md={4}>
+              <Listing {...listing} />
+            </Grid>
+          ))}
         </Grid>
-      ))}
-    </Grid>
+      ) : (
+        <Typography variant="h6" align="center" color="text.secondary" sx={{ mt: 5 }}>
+          No listings available.
+        </Typography>
+      )}
+    </Box>
   );
 };
 

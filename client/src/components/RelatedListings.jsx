@@ -1,32 +1,62 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Box, Typography, Button, Card, CardContent } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Button,
+  Card,
+  CardContent,
+  Grid,
+} from "@mui/material";
 import { LISTING_DETAILS_MESSAGES } from "../constants/listingDetailsMessages";
 
 const RelatedListings = ({ listings }) => {
   const navigate = useNavigate();
 
+  const hasListings = listings.length > 0;
+
   return (
-    <Box className="related-listings" mt={3}>
-      {listings.length > 0 ? (
-        listings.map((item) => (
-          <Card key={item.id} className="related-listing-card" variant="outlined" mb={2}>
-            <CardContent>
-              <Typography variant="h6">{item.title}</Typography>
-              <Typography variant="body1"><strong>Price:</strong> ${item.price}</Typography>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={() => navigate(`/listing/${item.id}`)}
-                className="view-details-button"
+    <Box sx={{ mt: 5 }}>
+      <Typography variant="h5" gutterBottom>
+        {LISTING_DETAILS_MESSAGES.RELATED_TITLE || "Related Listings"}
+      </Typography>
+
+      {hasListings ? (
+        <Grid container spacing={3}>
+          {listings.map((item) => (
+            <Grid item xs={12} sm={6} md={4} key={item.id}>
+              <Card
+                variant="outlined"
+                sx={{
+                  height: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                }}
               >
-                View Details
-              </Button>
-            </CardContent>
-          </Card>
-        ))
+                <CardContent>
+                  <Typography variant="h6" noWrap>
+                    {item.title}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    <strong>Price:</strong> ${item.price.toLocaleString()}
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    fullWidth
+                    onClick={() => navigate(`/listing/${item.id}`)}
+                  >
+                    View Details
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
       ) : (
-        <Typography>{LISTING_DETAILS_MESSAGES.NO_RELATED_LISTINGS}</Typography>
+        <Typography color="text.secondary" sx={{ mt: 2 }}>
+          {LISTING_DETAILS_MESSAGES.NO_RELATED_LISTINGS}
+        </Typography>
       )}
     </Box>
   );
