@@ -1,13 +1,13 @@
 module Users
   class SessionsController < Devise::SessionsController
     respond_to :json
-    skip_before_action :verify_authenticity_token, only: [:create, :destroy]
+    skip_before_action :verify_authenticity_token, only: [ :create, :destroy ]
 
     private
 
     # ✅ FIX: Ensure JWT token is retrieved and logged properly
     def respond_with(resource, _opts = {})
-      token = request.env['warden-jwt_auth.token']
+      token = request.env["warden-jwt_auth.token"]
 
       Rails.logger.info "🔹 User Login Attempt: #{resource.email}" # ✅ Log user login
       Rails.logger.info "🔹 JWT Token Generated: #{token}" if token.present? # ✅ Log token
@@ -15,7 +15,7 @@ module Users
       if token.present?
         render json: {
           message: "Logged in successfully",
-          user: resource.as_json(except: [:encrypted_password, :reset_password_token, :reset_password_sent_at, :remember_created_at]),
+          user: resource.as_json(except: [ :encrypted_password, :reset_password_token, :reset_password_sent_at, :remember_created_at ]),
           token: token
         }, status: :ok
       else
@@ -26,7 +26,7 @@ module Users
 
     # ✅ FIX: Ensure Devise properly logs out the user
     def respond_to_on_destroy
-      jwt_payload = request.env['warden-jwt_auth.token']
+      jwt_payload = request.env["warden-jwt_auth.token"]
       Rails.logger.info "🔹 Logout Attempt - JWT Payload: #{jwt_payload.inspect}" if jwt_payload
 
       if current_user

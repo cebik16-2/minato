@@ -9,18 +9,18 @@
 # Use this hook to configure devise mailer, warden hooks and so forth.
 # Many of these configuration options can be set straight in your model.
 Devise.setup do |config|
-  require 'devise/jwt'  # ✅ Correct placement of require statement
-  
-  config.navigational_formats = [:json]
-  
+  require "devise/jwt"  # ✅ Correct placement of require statement
+
+  config.navigational_formats = [ :json ]
+
   config.jwt do |jwt|
-    jwt.secret = ENV['DEVISE_JWT_SECRET_KEY'] || Rails.application.credentials.secret_key_base
-    jwt.dispatch_requests = [['POST', %r{^/users/sign_in$}]]
-    jwt.revocation_requests = [['DELETE', %r{^/users/sign_out$}]]
+    jwt.secret = ENV["DEVISE_JWT_SECRET_KEY"] || Rails.application.credentials.secret_key_base
+    jwt.dispatch_requests = [ [ "POST", %r{^/users/sign_in$} ] ]
+    jwt.revocation_requests = [ [ "DELETE", %r{^/users/sign_out$} ] ]
     jwt.expiration_time = 1.day.to_i
   end
 
-  config.skip_session_storage = [:http_auth]
+  config.skip_session_storage = [ :http_auth ]
 
   # The secret key used by Devise. Devise uses this key to generate
   # random tokens. Changing this key will render invalid all existing
@@ -109,7 +109,7 @@ Devise.setup do |config|
   # Notice that if you are skipping storage for all authentication paths, you
   # may want to disable generating routes to Devise's sessions controller by
   # passing skip: :sessions to `devise_for` in your config/routes.rb
-  
+
   # By default, Devise cleans up the CSRF token on authentication to
   # avoid CSRF token fixation attacks. This means that, when using AJAX
   # requests for sign in and sign up, you need to get a new CSRF token

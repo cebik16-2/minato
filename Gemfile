@@ -1,7 +1,7 @@
 source "https://rubygems.org"
 
-# SMTP 
-gem 'net-smtp', '~> 0.5.0'
+# SMTP
+gem "net-smtp", "~> 0.5.0"
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
 gem "rails", "~> 8.0.1"
 # The modern asset pipeline for Rails [https://github.com/rails/propshaft]
@@ -18,8 +18,8 @@ gem "turbo-rails"
 gem "stimulus-rails"
 # Build JSON APIs with ease [https://github.com/rails/jbuilder]
 gem "jbuilder"
-#JWT token
-gem 'jwt'
+# JWT token
+gem "jwt"
 # Allows you to generate your JSON in an object-oriented and convention-driven manner.
 gem "active_model_serializers"
 
@@ -30,8 +30,8 @@ gem "kaminari"
 gem "tzinfo-data", platforms: %i[ windows jruby ]
 
 # Use the database-backed adapters for Rails.cache, Active Job, and Action Cable
-gem "solid_cache", '0.4.0'
-gem 'solid_queue', '0.6.0'
+gem "solid_cache", "0.4.0"
+gem "solid_queue", "0.6.0"
 gem "solid_cable"
 
 # Reduces boot times through caching; required in config/boot.rb
@@ -63,5 +63,5 @@ group :development do
 end
 
 gem "devise", "~> 4.9"
-gem 'devise-jwt'
+gem "devise-jwt"
 gem "rack-cors"

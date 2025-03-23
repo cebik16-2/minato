@@ -3,9 +3,9 @@ require "active_support/core_ext/integer/time"
 Rails.application.configure do
   # Disable host filtering in development
   config.hosts.clear
-  
+
   # Settings specified here will take precedence over those in config/application.rb.
-  
+
   # Make code changes take effect immediately without server restart.
   config.enable_reloading = true
 

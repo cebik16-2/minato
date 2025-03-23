@@ -1,12 +1,12 @@
 Rails.application.routes.draw do
   devise_for :users, controllers: { sessions: "users/sessions" }
-  
-  resources :users, only: [:index, :show] do
+
+  resources :users, only: [ :index, :show ] do
     resources :products # Nested resources for products
   end
 
-  resources :favorites, only: [:index, :create, :destroy] # adjust actions as needed
-  resources :cities, only: [:index] # assuming you just need to list them
+  resources :favorites, only: [ :index, :create, :destroy ] # adjust actions as needed
+  resources :cities, only: [ :index ] # assuming you just need to list them
   resources :categories
 
   resources :products do
@@ -15,7 +15,7 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :listings, only: [:index, :show] # Add this line to create a /listings endpoint
+  resources :listings, only: [ :index, :show ] # Add this line to create a /listings endpoint
 
   get "welcome/index"
   root "welcome#index"

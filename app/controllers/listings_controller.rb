@@ -3,5 +3,4 @@ class ListingsController < ApplicationController
       listings = Listing.all
       render json: listings
     end
-  end
-  
+end
