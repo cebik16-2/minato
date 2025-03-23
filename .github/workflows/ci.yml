@@ -19,6 +19,9 @@ jobs:
           ruby-version: .ruby-version
           bundler-cache: true
 
+      - name: Ensure bin/brakeman is executable
+        run: chmod +x bin/brakeman
+        
       - name: Scan for common Rails security vulnerabilities using static analysis
         run: bin/brakeman --no-pager
 
@@ -36,4 +39,3 @@ jobs:
 
       - name: Lint code for consistent style
         run: bin/rubocop -f github
-
