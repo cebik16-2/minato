@@ -12,7 +12,6 @@ import {
   Alert,
 } from "@mui/material";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import AuthModal from "../components/AuthModal";
 import Login from "../pages/login/Login";
 import Register from "../pages/register/register";
 import "../styles/pages/layout.css";
@@ -33,22 +32,13 @@ const Layout = ({ children, isLoggedIn, handleLogin, handleLogout }) => {
     navigate("/create-listing");
   }, [isLoggedIn, navigate]);
 
-  const handleAuthClick = () => {
-    setIsAuthModalOpen(true);
-  };
-
+  const handleAuthClick = () => setIsAuthModalOpen(true);
   const handleAuthModalClose = () => {
     setIsAuthModalOpen(false);
     setAuthTab(0);
   };
-
-  const handleAuthTabChange = (event, newValue) => {
-    setAuthTab(newValue);
-  };
-
-  const handleSnackbarClose = () => {
-    setShowSnackbar(false);
-  };
+  const handleAuthTabChange = (_, newValue) => setAuthTab(newValue);
+  const handleSnackbarClose = () => setShowSnackbar(false);
 
   return (
     <div className="layout">
@@ -117,6 +107,7 @@ const Layout = ({ children, isLoggedIn, handleLogin, handleLogout }) => {
   );
 };
 
+// Inline AuthModal component
 const AuthModal = ({ isOpen, onClose, authTab, handleAuthTabChange, handleLogin }) => (
   <Modal open={isOpen} onClose={onClose}>
     <Box
