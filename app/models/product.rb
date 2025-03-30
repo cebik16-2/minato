@@ -1,5 +1,5 @@
 class Product < ApplicationRecord
-  belongs_to :user
+  belongs_to :seller, class_name: "User", foreign_key: "seller_id"
   belongs_to :category
   has_many_attached :files
 
@@ -7,7 +7,7 @@ class Product < ApplicationRecord
   has_many :favorited_by_users, through: :favorites, source: :user
 
   validates :category, presence: true
-  validates :user, presence: true
+  validates :seller, presence: true
   validates :title, presence: true
   validates :price, presence: true, numericality: { greater_than_or_equal_to: 0 }
 

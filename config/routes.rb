@@ -7,7 +7,7 @@ Rails.application.routes.draw do
 
   resources :favorites, only: [ :index, :create, :destroy ] # adjust actions as needed
   resources :cities, only: [ :index ] # assuming you just need to list them
-  resources :categories
+  resources :categories, only: [:index] # assuming you just need to list them
 
   resources :products do
     member do

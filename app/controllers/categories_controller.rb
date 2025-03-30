@@ -4,6 +4,7 @@ class CategoriesController < ApplicationController
   # GET /categories or /categories.json
   def index
     @categories = Category.all
+    render json: @categories
   end
 
   # GET /categories/1 or /categories/1.json
@@ -58,13 +59,14 @@ class CategoriesController < ApplicationController
   end
 
   private
+
     # Use callbacks to share common setup or constraints between actions.
     def set_category
-      @category = Category.find(params.expect(:id))
+      @category = Category.find(params[:id])
     end
 
     # Only allow a list of trusted parameters through.
     def category_params
-      params.expect(category: [ :name, :description ])
+      params.require(:category).permit(:name, :description)
     end
 end
