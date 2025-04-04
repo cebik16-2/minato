@@ -1,22 +1,17 @@
+// LoginModal.jsx
 import React, { useState } from "react";
-import { loginUser } from "../services/api"; // ✅ Correct path
-import useLoginForm from "../hooks/useLoginForm"; // ✅ Correct path
-import { LOGIN_MESSAGES, PLACEHOLDERS } from "../constants/messages"; // ✅ Correct path
-import { useAuth } from "../context/AuthContext"; // ✅ Correct path
-import "../styles/components/LoginModal.css"; // ✅ Correct path
+import { useNavigate } from "react-router-dom";
+import { loginUser } from "../services/auth";
+import useLoginForm from "../hooks/useLoginForm";
+import { LOGIN_MESSAGES, PLACEHOLDERS } from "../constants/messages";
+import { useAuth } from "../context/AuthContext";
+import "../styles/components/LoginModal.css";
 
 const LoginModal = () => {
-  const {
-    email,
-    password,
-    error,
-    setEmail,
-    setPassword,
-    setError,
-  } = useLoginForm();
-
+  const { email, password, error, setEmail, setPassword, setError } = useLoginForm();
   const { login, closeLoginModal } = useAuth();
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,16 +22,21 @@ const LoginModal = () => {
       const data = await loginUser(email, password);
       console.log("🔐 Login response:", data);
 
-      if (data?.token && typeof data.token === "string") {
+      if (data?.token) {
         login(data.token);
         closeLoginModal();
+        navigate("/listings");
       } else {
-        console.warn("⚠️ Token missing or invalid in response:", data);
         setError(LOGIN_MESSAGES.INVALID_CREDENTIALS);
+        console.warn("⚠️ Missing token in response:", data);
       }
     } catch (err) {
       console.error("❌ Login error:", err);
-      setError(LOGIN_MESSAGES.INVALID_CREDENTIALS);
+      const errorMsg =
+        err?.message === "Failed to fetch"
+          ? "Cannot connect to server. Check your network or backend."
+          : err?.message || LOGIN_MESSAGES.INVALID_CREDENTIALS;
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }

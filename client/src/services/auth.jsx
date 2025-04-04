@@ -1,3 +1,4 @@
+// src/services/auth.jsx
 import { BASE_URL, handleResponse } from "./helpers";
 import { setAuthToken } from "../utils/auth";
 
@@ -8,7 +9,15 @@ export const loginUser = async (email, password) => {
     body: JSON.stringify({ user: { email, password } }),
   });
 
-  const data = await handleResponse(response);
-  if (data.token) setAuthToken(data.token);
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data?.message || "Invalid username or password");
+  }
+
+  if (data.token) {
+    setAuthToken(data.token);
+  }
+
   return data;
 };
