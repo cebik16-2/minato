@@ -61,6 +61,7 @@ const CreateListing = () => {
       description,
       category_id: Number(categoryId),
     };
+    console.log("💥 userId before createUserProduct:", userId);
 
     try {
       await createUserProduct(userId, newListing);

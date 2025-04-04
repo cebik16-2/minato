@@ -14,23 +14,28 @@ import {
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import Login from "../pages/login/Login";
 import Register from "../pages/register/register";
+import { useAuth } from "../context/AuthContext"; // ✅ NEW
 import "../styles/pages/layout.css";
 
-const Layout = ({ children, isLoggedIn, handleLogin, handleLogout }) => {
+const Layout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const {
+    userId,
+    logout,
+  } = useAuth(); // ✅ Use context for auth status and logout
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authTab, setAuthTab] = useState(0);
   const [showSnackbar, setShowSnackbar] = useState(false);
 
   const handleAddListing = useCallback(() => {
-    if (!isLoggedIn) {
+    if (!userId) {
       setShowSnackbar(true);
       return;
     }
     navigate("/create-listing");
-  }, [isLoggedIn, navigate]);
+  }, [userId, navigate]);
 
   const handleAuthClick = () => setIsAuthModalOpen(true);
   const handleAuthModalClose = () => {
@@ -62,7 +67,7 @@ const Layout = ({ children, isLoggedIn, handleLogin, handleLogout }) => {
             Add Listing
           </Button>
 
-          {isLoggedIn ? (
+          {userId ? (
             <>
               <Button
                 color={location.pathname === "/my-account" ? "secondary" : "inherit"}
@@ -71,7 +76,7 @@ const Layout = ({ children, isLoggedIn, handleLogin, handleLogout }) => {
               >
                 My Account
               </Button>
-              <Button color="inherit" onClick={handleLogout}>
+              <Button color="inherit" onClick={logout}>
                 Logout
               </Button>
             </>
@@ -90,7 +95,6 @@ const Layout = ({ children, isLoggedIn, handleLogin, handleLogout }) => {
         onClose={handleAuthModalClose}
         authTab={authTab}
         handleAuthTabChange={handleAuthTabChange}
-        handleLogin={handleLogin}
       />
 
       <Snackbar
@@ -107,8 +111,7 @@ const Layout = ({ children, isLoggedIn, handleLogin, handleLogout }) => {
   );
 };
 
-// Inline AuthModal component
-const AuthModal = ({ isOpen, onClose, authTab, handleAuthTabChange, handleLogin }) => (
+const AuthModal = ({ isOpen, onClose, authTab, handleAuthTabChange }) => (
   <Modal open={isOpen} onClose={onClose}>
     <Box
       sx={{
@@ -127,7 +130,7 @@ const AuthModal = ({ isOpen, onClose, authTab, handleAuthTabChange, handleLogin 
         <Tab label="Login" />
         <Tab label="Register" />
       </Tabs>
-      {authTab === 0 && <Login handleLogin={handleLogin} />}
+      {authTab === 0 && <Login />}
       {authTab === 1 && <Register />}
     </Box>
   </Modal>

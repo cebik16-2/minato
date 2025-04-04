@@ -28,10 +28,19 @@ export const decodeToken = (token) => {
 // ✅ Get logged-in user ID from token
 export const getUserIdFromToken = () => {
   const token = getAuthToken();
-  if (!token) return null;
+
+  if (!token) {
+    console.warn("⚠️ No authToken found in localStorage");
+    return null;
+  }
+
+  console.log("🔐 Raw token from localStorage:", token);
 
   const decoded = decodeToken(token);
+  console.log("📦 Decoded token payload:", decoded);
 
-  // ✅ Supports common token formats: { sub: "4" } or { user_id: "4" }
-  return decoded?.user_id || decoded?.sub || decoded?.id || null;
+  const userId = decoded?.user_id || decoded?.sub || decoded?.id || null;
+  console.log("🆔 Extracted user ID from token:", userId);
+
+  return userId;
 };
