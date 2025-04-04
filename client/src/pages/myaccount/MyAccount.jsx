@@ -8,7 +8,7 @@ const MyAccount = ({ user, favorites, listings }) => {
   const handleLogout = () => {
     // Clear user session (e.g., remove token, reset state)
     console.log("User logged out");
-    navigate("/login");
+    navigate("/");
   };
 
   return (

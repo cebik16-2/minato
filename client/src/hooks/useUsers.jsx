@@ -24,7 +24,7 @@ const useUsers = () => {
         if (err.message.includes("401")) {
           console.warn("Unauthorized! Redirecting to login...");
           localStorage.removeItem("authToken"); // ✅ Clear invalid token
-          window.location.href = "/login"; // ✅ Redirect to login
+          window.location.href = "/"; // ✅ Redirect to homepage
         }
       } finally {
         setLoading(false);

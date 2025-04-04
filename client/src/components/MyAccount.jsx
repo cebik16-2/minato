@@ -18,7 +18,7 @@ const MyAccount = ({ user, favorites = [], listings = [] }) => {
   const handleLogout = () => {
     console.log("User logged out");
     localStorage.removeItem("loggedInUser");
-    navigate("/login");
+    navigate("/");
   };
 
   return (

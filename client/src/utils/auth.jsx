@@ -9,7 +9,7 @@ export const setAuthToken = (token) => {
 // ✅ Remove JWT token (logout)
 export const logoutUser = () => {
   localStorage.removeItem("authToken");
-  window.location.href = "/login"; // Redirect to login
+  window.location.href = "/"; // Redirect to homepage
 };
 
 // ✅ Decode JWT token
