@@ -20,16 +20,17 @@
 </template>
 
 <script setup lang="ts">
+// ✅ Define and export props type
 export interface EssentialLinkProps {
-  title: string;
-  caption?: string;
-  link?: string;
-  icon?: string;
-};
+  title: string
+  caption?: string
+  link?: string
+  icon?: string
+}
 
 withDefaults(defineProps<EssentialLinkProps>(), {
   caption: '',
   link: '#',
-  icon: '',
-});
+  icon: ''
+})
 </script>

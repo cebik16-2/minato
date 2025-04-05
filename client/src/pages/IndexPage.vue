@@ -5,35 +5,41 @@
       active
       :todos="todos"
       :meta="meta"
-    ></example-component>
+    />
   </q-page>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import type { Todo, Meta } from 'components/models';
+import type { Todo, Meta } from '../components/models';
+
 import ExampleComponent from 'components/ExampleComponent.vue';
 
 const todos = ref<Todo[]>([
   {
     id: 1,
-    content: 'ct1'
+    title: 'Task 1',
+    done: false
   },
   {
     id: 2,
-    content: 'ct2'
+    title: 'Task 2',
+    done: true
   },
   {
     id: 3,
-    content: 'ct3'
+    title: 'Task 3',
+    done: false
   },
   {
     id: 4,
-    content: 'ct4'
+    title: 'Task 4',
+    done: true
   },
   {
     id: 5,
-    content: 'ct5'
+    title: 'Task 5',
+    done: false
   }
 ]);
 

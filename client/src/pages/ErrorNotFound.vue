@@ -1,27 +1,9 @@
 <template>
-  <div class="fullscreen bg-blue text-white text-center q-pa-md flex flex-center">
-    <div>
-      <div style="font-size: 30vh">
-        404
-      </div>
-
-      <div class="text-h2" style="opacity:.4">
-        Oops. Nothing here...
-      </div>
-
-      <q-btn
-        class="q-mt-xl"
-        color="white"
-        text-color="blue"
-        unelevated
-        to="/"
-        label="Go Home"
-        no-caps
-      />
+  <q-page class="row items-center justify-center">
+    <div class="text-center">
+      <h1 class="text-h2">404</h1>
+      <p class="text-subtitle1">Oops! Page not found.</p>
+      <q-btn label="Go Home" to="/" color="primary" class="q-mt-md" />
     </div>
-  </div>
+  </q-page>
 </template>
-
-<script setup lang="ts">
-//
-</script>

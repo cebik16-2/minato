@@ -25,9 +25,7 @@
       bordered
     >
       <q-list>
-        <q-item-label
-          header
-        >
+        <q-item-label header>
           Essential Links
         </q-item-label>
 
@@ -46,8 +44,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import EssentialLink, { type EssentialLinkProps } from 'components/EssentialLink.vue';
+import { ref } from 'vue'
+import EssentialLink from 'components/EssentialLink.vue'
+import type { EssentialLinkProps } from '@/components/models' // Updated import path
 
 const linksList: EssentialLinkProps[] = [
   {
@@ -92,11 +91,11 @@ const linksList: EssentialLinkProps[] = [
     icon: 'favorite',
     link: 'https://awesome.quasar.dev'
   }
-];
+]
 
-const leftDrawerOpen = ref(false);
+const leftDrawerOpen = ref(false)
 
 function toggleLeftDrawer () {
-  leftDrawerOpen.value = !leftDrawerOpen.value;
+  leftDrawerOpen.value = !leftDrawerOpen.value
 }
 </script>
