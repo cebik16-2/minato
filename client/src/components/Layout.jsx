@@ -4,26 +4,18 @@ import {
   Toolbar,
   Button,
   Typography,
-  Modal,
-  Box,
-  Tabs,
-  Tab,
   Snackbar,
   Alert,
 } from "@mui/material";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import Login from "../pages/login/Login";
-import Register from "../pages/register/register";
-import { useAuth } from "../context/AuthContext"; // ✅ NEW
+import AuthModal from "./AuthModal"; // Extracted AuthModal
+import { useAuth } from "../context/AuthContext";
 import "../styles/pages/layout.css";
 
 const Layout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const {
-    userId,
-    logout,
-  } = useAuth(); // ✅ Use context for auth status and logout
+  const { userId, logout } = useAuth();
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authTab, setAuthTab] = useState(0);
@@ -59,11 +51,16 @@ const Layout = ({ children }) => {
             color={location.pathname === "/FeaturedListings" ? "secondary" : "inherit"}
             component={Link}
             to="/FeaturedListings"
+            aria-label="View Favorites"
           >
             Favorites
           </Button>
 
-          <Button color="inherit" onClick={handleAddListing}>
+          <Button
+            color="inherit"
+            onClick={handleAddListing}
+            aria-label="Add a new listing"
+          >
             Add Listing
           </Button>
 
@@ -73,15 +70,20 @@ const Layout = ({ children }) => {
                 color={location.pathname === "/my-account" ? "secondary" : "inherit"}
                 component={Link}
                 to="/my-account"
+                aria-label="Go to My Account"
               >
                 My Account
               </Button>
-              <Button color="inherit" onClick={logout}>
+              <Button color="inherit" onClick={logout} aria-label="Logout">
                 Logout
               </Button>
             </>
           ) : (
-            <Button color="inherit" onClick={handleAuthClick}>
+            <Button
+              color="inherit"
+              onClick={handleAuthClick}
+              aria-label="Login or Register"
+            >
               Login/Register
             </Button>
           )}
@@ -110,30 +112,5 @@ const Layout = ({ children }) => {
     </div>
   );
 };
-
-const AuthModal = ({ isOpen, onClose, authTab, handleAuthTabChange }) => (
-  <Modal open={isOpen} onClose={onClose}>
-    <Box
-      sx={{
-        position: "absolute",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-        width: 400,
-        bgcolor: "background.paper",
-        borderRadius: 2,
-        boxShadow: 24,
-        p: 4,
-      }}
-    >
-      <Tabs value={authTab} onChange={handleAuthTabChange} centered>
-        <Tab label="Login" />
-        <Tab label="Register" />
-      </Tabs>
-      {authTab === 0 && <Login />}
-      {authTab === 1 && <Register />}
-    </Box>
-  </Modal>
-);
 
 export default Layout;

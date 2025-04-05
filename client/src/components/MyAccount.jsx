@@ -1,4 +1,5 @@
 import React from "react";
+import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -9,17 +10,23 @@ import {
   ListItemText,
   Stack,
   Divider,
-  Grid,
 } from "@mui/material";
 
 const MyAccount = ({ user, favorites = [], listings = [] }) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    console.log("User logged out");
     localStorage.removeItem("loggedInUser");
     navigate("/");
   };
+
+  if (!user) {
+    return (
+      <Typography variant="h6" color="error" align="center" sx={{ mt: 5 }}>
+        User data is not available. Please log in again.
+      </Typography>
+    );
+  }
 
   return (
     <Box sx={{ maxWidth: 900, mx: "auto", p: { xs: 2, md: 4 } }}>
@@ -39,6 +46,7 @@ const MyAccount = ({ user, favorites = [], listings = [] }) => {
           variant="contained"
           color="primary"
           onClick={() => navigate("/edit-profile")}
+          aria-label="Edit profile"
         >
           Edit Profile
         </Button>
@@ -61,6 +69,7 @@ const MyAccount = ({ user, favorites = [], listings = [] }) => {
                   <Button
                     variant="outlined"
                     onClick={() => navigate(`/listing/${fav.id}`)}
+                    aria-label={`View details of ${fav.title}`}
                   >
                     View
                   </Button>
@@ -72,7 +81,7 @@ const MyAccount = ({ user, favorites = [], listings = [] }) => {
           </List>
         ) : (
           <Typography color="text.secondary">
-            You have no favorite listings yet.
+            You have no favorite listings yet. Start exploring to add some!
           </Typography>
         )}
       </Box>
@@ -96,6 +105,7 @@ const MyAccount = ({ user, favorites = [], listings = [] }) => {
                       size="small"
                       variant="outlined"
                       onClick={() => navigate(`/listing/${listing.id}`)}
+                      aria-label={`View details of ${listing.title}`}
                     >
                       View
                     </Button>
@@ -104,6 +114,7 @@ const MyAccount = ({ user, favorites = [], listings = [] }) => {
                       variant="contained"
                       color="primary"
                       onClick={() => navigate(`/edit-listing/${listing.id}`)}
+                      aria-label={`Edit ${listing.title}`}
                     >
                       Edit
                     </Button>
@@ -112,6 +123,7 @@ const MyAccount = ({ user, favorites = [], listings = [] }) => {
                       variant="contained"
                       color="error"
                       onClick={() => console.log("Delete listing", listing.id)}
+                      aria-label={`Delete ${listing.title}`}
                     >
                       Delete
                     </Button>
@@ -124,7 +136,7 @@ const MyAccount = ({ user, favorites = [], listings = [] }) => {
           </List>
         ) : (
           <Typography color="text.secondary">
-            You have no listings yet.
+            You have no listings yet. Create one to get started!
           </Typography>
         )}
       </Box>
@@ -138,12 +150,32 @@ const MyAccount = ({ user, favorites = [], listings = [] }) => {
           color="secondary"
           onClick={handleLogout}
           size="large"
+          aria-label="Logout"
         >
           Logout
         </Button>
       </Box>
     </Box>
   );
+};
+
+MyAccount.propTypes = {
+  user: PropTypes.shape({
+    name: PropTypes.string.isRequired,
+    email: PropTypes.string.isRequired,
+  }),
+  favorites: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      title: PropTypes.string.isRequired,
+    })
+  ),
+  listings: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      title: PropTypes.string.isRequired,
+    })
+  ),
 };
 
 export default MyAccount;

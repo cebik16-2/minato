@@ -2,7 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import { Card, CardContent, Typography, Button, Stack } from "@mui/material";
 
-const DashboardCard = ({ title, description, buttonText, onClick }) => {
+const DashboardCard = ({ title, description, buttonText, onClick, icon: Icon, sx }) => {
   return (
     <Card
       sx={{
@@ -14,20 +14,29 @@ const DashboardCard = ({ title, description, buttonText, onClick }) => {
         "&:hover": {
           transform: "translateY(-4px)",
         },
+        ...sx,
       }}
     >
       <CardContent>
         <Stack spacing={2}>
-          <Typography variant="h5" component="div" fontWeight="bold">
-            {title}
-          </Typography>
+          <Stack direction="row" alignItems="center" spacing={1}>
+            {Icon && <Icon fontSize="large" />}
+            <Typography variant="h5" component="div" fontWeight="bold">
+              {title}
+            </Typography>
+          </Stack>
 
           <Typography variant="body2" color="text.secondary">
             {description}
           </Typography>
 
           {buttonText && onClick && (
-            <Button variant="contained" color="primary" onClick={onClick}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={onClick}
+              aria-label={buttonText}
+            >
               {buttonText}
             </Button>
           )}
@@ -42,6 +51,15 @@ DashboardCard.propTypes = {
   description: PropTypes.string.isRequired,
   buttonText: PropTypes.string,
   onClick: PropTypes.func,
+  sx: PropTypes.object,
+  icon: PropTypes.elementType,
+};
+
+DashboardCard.defaultProps = {
+  buttonText: null,
+  onClick: null,
+  sx: {},
+  icon: null,
 };
 
 export default DashboardCard;

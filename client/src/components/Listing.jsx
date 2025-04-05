@@ -1,4 +1,5 @@
 import React from "react";
+import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
 import {
   Card,
@@ -19,16 +20,13 @@ const Listing = ({
   title,
   price,
   location,
-  isFavorite,
+  isFavorite = false,
   toggleFavorite,
-  imageUrl,
-  isNew,
-  isFeatured,
+  imageUrl = "",
+  isNew = false,
+  isFeatured = false,
 }) => {
   const navigate = useNavigate();
-
-  const handleFavoriteClick = () => toggleFavorite(id);
-  const handleViewDetails = () => navigate(`/listing/${id}`);
 
   return (
     <Card
@@ -52,7 +50,7 @@ const Listing = ({
           component="img"
           height="180"
           image={imageUrl}
-          alt={title}
+          alt={`Image of ${title}`}
         />
       )}
 
@@ -72,7 +70,7 @@ const Listing = ({
 
       {/* Favorite Button */}
       <IconButton
-        onClick={handleFavoriteClick}
+        onClick={() => toggleFavorite(id)}
         color="primary"
         sx={{ position: "absolute", top: 8, right: 8 }}
         aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
@@ -103,8 +101,9 @@ const Listing = ({
             <Button
               variant="contained"
               color="primary"
-              onClick={handleViewDetails}
+              onClick={() => navigate(`/listing/${id}`)}
               fullWidth
+              aria-label={`View details of ${title}`}
             >
               View Details
             </Button>
@@ -113,6 +112,18 @@ const Listing = ({
       </CardContent>
     </Card>
   );
+};
+
+Listing.propTypes = {
+  id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  title: PropTypes.string.isRequired,
+  price: PropTypes.number.isRequired,
+  location: PropTypes.string.isRequired,
+  isFavorite: PropTypes.bool,
+  toggleFavorite: PropTypes.func.isRequired,
+  imageUrl: PropTypes.string,
+  isNew: PropTypes.bool,
+  isFeatured: PropTypes.bool,
 };
 
 export default Listing;

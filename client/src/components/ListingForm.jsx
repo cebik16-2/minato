@@ -6,6 +6,7 @@ import {
   Typography,
   Stack,
   IconButton,
+  Alert,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 
@@ -18,6 +19,8 @@ const ListingForm = ({ initialData = {}, onSubmit, onCancel }) => {
     images: [],
     ...initialData,
   });
+
+  const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -43,9 +46,21 @@ const ListingForm = ({ initialData = {}, onSubmit, onCancel }) => {
     setFormData((prev) => ({ ...prev, images: updatedImages }));
   };
 
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.title.trim()) newErrors.title = "Title is required.";
+    if (!formData.price || isNaN(formData.price) || formData.price <= 0)
+      newErrors.price = "Price must be a positive number.";
+    if (!formData.location.trim()) newErrors.location = "Location is required.";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    if (validateForm()) {
+      onSubmit(formData);
+    }
   };
 
   return (
@@ -73,6 +88,9 @@ const ListingForm = ({ initialData = {}, onSubmit, onCancel }) => {
           onChange={handleChange}
           required
           fullWidth
+          error={!!errors.title}
+          helperText={errors.title}
+          aria-label="Listing title"
         />
 
         <TextField
@@ -83,6 +101,9 @@ const ListingForm = ({ initialData = {}, onSubmit, onCancel }) => {
           onChange={handleChange}
           required
           fullWidth
+          error={!!errors.price}
+          helperText={errors.price}
+          aria-label="Listing price"
         />
 
         <TextField
@@ -92,6 +113,9 @@ const ListingForm = ({ initialData = {}, onSubmit, onCancel }) => {
           onChange={handleChange}
           required
           fullWidth
+          error={!!errors.location}
+          helperText={errors.location}
+          aria-label="Listing location"
         />
 
         <TextField
@@ -103,6 +127,7 @@ const ListingForm = ({ initialData = {}, onSubmit, onCancel }) => {
           multiline
           rows={4}
           fullWidth
+          aria-label="Listing description"
         />
 
         <Box>
@@ -118,27 +143,50 @@ const ListingForm = ({ initialData = {}, onSubmit, onCancel }) => {
                   onChange={(e) => handleImageChange(index, e.target.value)}
                   fullWidth
                   sx={{ mr: 1 }}
+                  aria-label={`Image URL ${index + 1}`}
                 />
                 <IconButton
                   color="error"
                   onClick={() => handleRemoveImage(index)}
-                  aria-label="Remove image"
+                  aria-label={`Remove image ${index + 1}`}
                 >
                   <DeleteIcon />
                 </IconButton>
               </Box>
             ))}
-            <Button onClick={handleAddImage} variant="outlined" size="small">
+            <Button
+              onClick={handleAddImage}
+              variant="outlined"
+              size="small"
+              aria-label="Add new image"
+            >
               + Add Image
             </Button>
           </Stack>
         </Box>
 
+        {Object.keys(errors).length > 0 && (
+          <Alert severity="error" sx={{ mt: 2 }}>
+            Please fix the errors above before submitting.
+          </Alert>
+        )}
+
         <Stack direction="row" spacing={2} justifyContent="flex-end" mt={2}>
-          <Button type="submit" variant="contained" color="primary">
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
+            aria-label="Save listing"
+          >
             Save
           </Button>
-          <Button type="button" variant="outlined" color="secondary" onClick={onCancel}>
+          <Button
+            type="button"
+            variant="outlined"
+            color="secondary"
+            onClick={onCancel}
+            aria-label="Cancel listing form"
+          >
             Cancel
           </Button>
         </Stack>

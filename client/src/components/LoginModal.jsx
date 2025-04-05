@@ -1,4 +1,3 @@
-// LoginModal.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginUser } from "../services/auth";
@@ -6,6 +5,7 @@ import useLoginForm from "../hooks/useLoginForm";
 import { LOGIN_MESSAGES, PLACEHOLDERS } from "../constants/messages";
 import { useAuth } from "../context/AuthContext";
 import "../styles/components/LoginModal.css";
+import { Box, TextField, Button, Typography, CircularProgress, Alert } from "@mui/material";
 
 const LoginModal = () => {
   const { email, password, error, setEmail, setPassword, setError } = useLoginForm();
@@ -45,26 +45,49 @@ const LoginModal = () => {
   return (
     <div className="login-modal">
       <div className="login-modal-content">
-        <h2>Login</h2>
+        <Typography variant="h5" component="h2" gutterBottom>
+          Login
+        </Typography>
         <form onSubmit={handleSubmit}>
-          <input
-            type="email"
-            placeholder={PLACEHOLDERS.EMAIL}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <input
-            type="password"
-            placeholder={PLACEHOLDERS.PASSWORD}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          {error && <p className="login-error">{error}</p>}
-          <button type="submit" disabled={loading}>
-            {loading ? "Logging in..." : "Login"}
-          </button>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <TextField
+              type="email"
+              label="Email"
+              placeholder={PLACEHOLDERS.EMAIL}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              fullWidth
+              disabled={loading}
+              aria-label="Email address"
+            />
+            <TextField
+              type="password"
+              label="Password"
+              placeholder={PLACEHOLDERS.PASSWORD}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              fullWidth
+              disabled={loading}
+              aria-label="Password"
+            />
+            {error && (
+              <Alert severity="error" sx={{ mt: 2 }}>
+                {error}
+              </Alert>
+            )}
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              disabled={loading}
+              fullWidth
+              aria-label="Login"
+            >
+              {loading ? <CircularProgress size={24} /> : "Login"}
+            </Button>
+          </Box>
         </form>
       </div>
     </div>

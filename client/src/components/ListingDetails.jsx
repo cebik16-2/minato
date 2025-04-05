@@ -1,16 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getListings } from "../services";
 import {
   Box,
   Typography,
-  Button,
-  CircularProgress,
   Grid,
   Card,
-  CardContent,
   CardMedia,
+  CardContent,
+  Button,
+  CircularProgress,
 } from "@mui/material";
+import { getListings } from "../services/listings";
+import { LISTING_DETAILS_MESSAGES } from "../constants/listingDetailsMessages";
 
 const ListingDetails = () => {
   const { id } = useParams();
@@ -24,23 +25,21 @@ const ListingDetails = () => {
   useEffect(() => {
     const fetchListing = async () => {
       try {
+        setLoading(true);
         const listings = await getListings();
         const foundListing = listings.find((item) => item.id.toString() === id);
 
         if (foundListing) {
           setListing(foundListing);
-
           const related = listings.filter(
-            (item) =>
-              item.category === foundListing.category &&
-              item.id.toString() !== id
+            (item) => item.id !== foundListing.id && item.category === foundListing.category
           );
           setRelatedListings(related);
         } else {
-          setError("Listing not found");
+          setError(LISTING_DETAILS_MESSAGES.LISTING_NOT_FOUND);
         }
       } catch (err) {
-        setError("Error fetching listing details");
+        setError(LISTING_DETAILS_MESSAGES.ERROR_FETCHING_LISTING);
       } finally {
         setLoading(false);
       }
@@ -49,11 +48,30 @@ const ListingDetails = () => {
     fetchListing();
   }, [id]);
 
-  if (loading) return <CircularProgress sx={{ display: "block", mx: "auto", mt: 5 }} />;
-  if (error) return <Typography color="error">{error}</Typography>;
+  if (loading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 5 }}>
+        <CircularProgress />
+        <Typography sx={{ ml: 2 }}>{LISTING_DETAILS_MESSAGES.LOADING}</Typography>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Typography color="error" sx={{ textAlign: "center", mt: 5 }}>
+        {error}
+      </Typography>
+    );
+  }
+
+  if (!listing) {
+    return null;
+  }
 
   return (
     <Box sx={{ p: { xs: 2, md: 5 } }}>
+      {/* Listing Details */}
       <Typography variant="h4" gutterBottom>
         {listing.title}
       </Typography>
@@ -67,34 +85,44 @@ const ListingDetails = () => {
       </Typography>
 
       <Typography variant="body1" sx={{ mb: 4 }}>
-        <strong>Description:</strong> {listing.description}
+        <strong>Description:</strong> {listing.description || LISTING_DETAILS_MESSAGES.NO_DESCRIPTION}
       </Typography>
 
-      {/* Images */}
+      {/* Images Section */}
       <Typography variant="h5" gutterBottom>
         Images
       </Typography>
       <Grid container spacing={2} sx={{ mb: 4 }}>
-        {listing.images?.map((image, index) => (
-          <Grid item xs={12} sm={6} md={4} key={index}>
-            <Card>
-              <CardMedia
-                component="img"
-                height="200"
-                image={image}
-                alt={`${listing.title} ${index + 1}`}
-                sx={{ objectFit: "cover" }}
-              />
-            </Card>
-          </Grid>
-        ))}
+        {listing.images?.length > 0 ? (
+          listing.images.map((image, index) => (
+            <Grid item xs={12} sm={6} md={4} key={index}>
+              <Card>
+                <CardMedia
+                  component="img"
+                  height="200"
+                  image={image}
+                  alt={`${listing.title} Image ${index + 1}`}
+                  sx={{ objectFit: "cover" }}
+                />
+              </Card>
+            </Grid>
+          ))
+        ) : (
+          <Typography color="text.secondary">{LISTING_DETAILS_MESSAGES.NO_IMAGES}</Typography>
+        )}
       </Grid>
 
-      <Button variant="contained" color="primary" onClick={() => navigate(-1)} sx={{ mb: 5 }}>
-        Back to Listings
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={() => navigate(-1)}
+        sx={{ mb: 5 }}
+        aria-label={LISTING_DETAILS_MESSAGES.BACK_BUTTON}
+      >
+        {LISTING_DETAILS_MESSAGES.BACK_BUTTON}
       </Button>
 
-      {/* Related Listings */}
+      {/* Related Listings Section */}
       <Typography variant="h5" gutterBottom>
         Related Listings
       </Typography>
@@ -124,6 +152,7 @@ const ListingDetails = () => {
                     color="primary"
                     fullWidth
                     onClick={() => navigate(`/listing/${related.id}`)}
+                    aria-label={`View details of ${related.title}`}
                   >
                     View Details
                   </Button>
@@ -132,7 +161,9 @@ const ListingDetails = () => {
             </Grid>
           ))
         ) : (
-          <Typography>No related listings found.</Typography>
+          <Typography color="text.secondary" sx={{ mt: 2 }}>
+            {LISTING_DETAILS_MESSAGES.NO_RELATED_LISTINGS}
+          </Typography>
         )}
       </Grid>
     </Box>

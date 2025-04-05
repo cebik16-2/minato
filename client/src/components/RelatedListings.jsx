@@ -1,4 +1,5 @@
 import React from "react";
+import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -10,10 +11,8 @@ import {
 } from "@mui/material";
 import { LISTING_DETAILS_MESSAGES } from "../constants/listingDetailsMessages";
 
-const RelatedListings = ({ listings }) => {
+const RelatedListings = ({ listings = [] }) => {
   const navigate = useNavigate();
-
-  const hasListings = listings.length > 0;
 
   return (
     <Box sx={{ mt: 5 }}>
@@ -21,7 +20,7 @@ const RelatedListings = ({ listings }) => {
         {LISTING_DETAILS_MESSAGES.RELATED_TITLE || "Related Listings"}
       </Typography>
 
-      {hasListings ? (
+      {listings.length > 0 ? (
         <Grid container spacing={3}>
           {listings.map((item) => (
             <Grid item xs={12} sm={6} md={4} key={item.id}>
@@ -45,6 +44,7 @@ const RelatedListings = ({ listings }) => {
                     variant="contained"
                     fullWidth
                     onClick={() => navigate(`/listing/${item.id}`)}
+                    aria-label={`View details of ${item.title}`}
                   >
                     View Details
                   </Button>
@@ -60,6 +60,16 @@ const RelatedListings = ({ listings }) => {
       )}
     </Box>
   );
+};
+
+RelatedListings.propTypes = {
+  listings: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      title: PropTypes.string.isRequired,
+      price: PropTypes.number.isRequired,
+    })
+  ),
 };
 
 export default RelatedListings;
