@@ -26,10 +26,14 @@ const CreateListing = () => {
     const fetchCategories = async () => {
       try {
         const res = await fetch(`${import.meta.env.VITE_API_URL}/categories`);
+        
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+  
         const data = await res.json();
-
+  
         let fetchedCategories = [];
-
         if (Array.isArray(data)) {
           fetchedCategories = data;
         } else if (Array.isArray(data.categories)) {
@@ -37,14 +41,14 @@ const CreateListing = () => {
         } else {
           console.warn("❌ Unexpected category format:", data);
         }
-
+  
         setCategories(fetchedCategories);
       } catch (err) {
         console.error('❌ Failed to fetch categories:', err);
         setCategories([]);
       }
     };
-
+  
     fetchCategories();
   }, []);
 
