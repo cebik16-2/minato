@@ -1,11 +1,14 @@
-// Configuration for your app
-import { configure } from 'quasar/wrappers'         // ✅ correct
+import { configure } from 'quasar/wrappers'
 import { fileURLToPath } from 'node:url'
-import { resolve } from 'path'
+import { dirname, resolve } from 'path'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 export default configure((ctx) => {
   return {
     boot: ['i18n', 'axios'],
+
     css: ['app.scss'],
 
     extras: ['roboto-font', 'material-icons'],
@@ -45,10 +48,10 @@ export default configure((ctx) => {
       vite: {
         resolve: {
           alias: {
-            '@': resolve(__dirname, './src'),
-            components: resolve(__dirname, './src/components'),
-            pages: resolve(__dirname, './src/pages'),
-            layouts: resolve(__dirname, './src/layouts'),
+            '@': resolve(__dirname, 'src'),
+            components: resolve(__dirname, 'src/components'),
+            pages: resolve(__dirname, 'src/pages'),
+            layouts: resolve(__dirname, 'src/layouts')
           }
         }
       }
@@ -60,7 +63,7 @@ export default configure((ctx) => {
 
     framework: {
       config: {},
-      plugins: []
+      plugins: ['Notify'] // 👈 Add this if it's missing
     },
 
     animations: [],
@@ -76,6 +79,7 @@ export default configure((ctx) => {
     },
 
     cordova: {},
+
     capacitor: {
       hideSplashscreen: true
     },
@@ -94,5 +98,3 @@ export default configure((ctx) => {
     }
   }
 })
-// Configuration for your app
-// https://v2.quasar.dev/quasar-cli-vite/quasar-config-file

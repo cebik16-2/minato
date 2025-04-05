@@ -40,13 +40,18 @@
     <q-page-container>
       <router-view />
     </q-page-container>
+
+    <!-- 🔒 Login Modal -->
+    <LoginModal />
   </q-layout>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import EssentialLink from 'components/EssentialLink.vue'
-import type { EssentialLinkProps } from '@/components/models' // Updated import path
+import LoginModal from 'components/LoginModal.vue' // 👈 Add this line
+
+import type { EssentialLinkProps } from '@/components/models'
 
 const linksList: EssentialLinkProps[] = [
   {
