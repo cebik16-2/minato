@@ -64,4 +64,6 @@ end
 
 gem "devise", "~> 4.9"
 gem "devise-jwt"
+gem "devise_token_auth"
+gem "omniauth"
 gem 'rack-cors', require: 'rack/cors'

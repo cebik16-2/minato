@@ -4,8 +4,7 @@ Rails.application.config.middleware.insert_before 0, Rack::Cors do
 
     resource "*",
       headers: :any,
-      methods: [ :get, :post, :patch, :put, :delete, :options ],
-      credentials: true,
-      expose: [ "Authorization" ] # Expose headers if needed (e.g., JWT token)
+      methods: [:get, :post, :patch, :put, :delete, :options],
+      expose: ["access-token", "client", "uid"]
   end
 end

@@ -1,5 +1,7 @@
 <template>
   <q-page class="q-pa-md">
+    <LoginButton class="q-mb-lg" />
+
     <example-component
       v-if="todos.length"
       title="Fetched Products"
@@ -7,6 +9,7 @@
       :todos="todos"
       :meta="meta"
     />
+
     <div v-else class="q-gutter-md q-mt-xl flex flex-center column">
       <q-spinner size="50px" color="primary" />
       <div class="text-subtitle1 q-mt-sm">Loading products...</div>
@@ -18,6 +21,9 @@
       <q-btn color="info" label="📦 Get First Product" @click="getSingleProduct" />
       <q-btn color="warning" label="✏️ Update First Product" @click="updateProductData" />
       <q-btn color="negative" label="❌ Delete First Product" @click="deleteProductEntry" />
+      <q-btn color="pink" label="🌟 Get Favorites" @click="fetchFavorites" />
+      <q-btn color="accent" label="➕ Add Favorite" @click="addDummyFavorite" />
+      <q-btn color="dark" label="🗑️ Remove First Favorite" @click="removeFirstFavorite" />
     </div>
   </q-page>
 </template>
@@ -32,26 +38,41 @@ import {
   updateProduct,
   deleteProduct
 } from '../services/api/products/products'
-import ExampleComponent from 'components/ExampleComponent.vue'
 import { api } from '../boot/axios'
+import {
+  getFavorites,
+  addFavorite,
+  removeFavorite
+} from '../services/api/favorites/favoriteApi'
+import LoginButton from 'components/LoginButton.vue'
+import ExampleComponent from 'components/ExampleComponent.vue'
 
-// Hardcoded userId for now
-const userId = 1
-
+const favorites = ref<{ id: number }[]>([])
 const isAuthenticated = ref(false)
 const todos = ref<Todo[]>([])
 const meta = ref<Meta>({ totalCount: 0 })
 
-const fetchProducts = async () => {
-  if (!isAuthenticated.value) {
-    console.warn('⚠️ User not authenticated.')
-    return
-  }
+const applyAuthHeaders = () => {
+  const stored = localStorage.getItem('authToken')
+  if (!stored) return
 
   try {
-    const response = await getUserProducts(userId)
+    const token = JSON.parse(stored)
+    api.defaults.headers.common['access-token'] = token['access-token']
+    api.defaults.headers.common['client'] = token['client']
+    api.defaults.headers.common['uid'] = token['uid']
+    isAuthenticated.value = true
+  } catch (e) {
+    console.warn('⚠️ Invalid auth token structure in localStorage', e)
+  }
+}
+
+const fetchProducts = async () => {
+  if (!isAuthenticated.value) return console.warn('⚠️ User not authenticated.')
+
+  try {
+    const response = await getUserProducts()
     const products: Product[] = response.data.products
-    console.log('📦 Fetched Products:', products)
 
     if (Array.isArray(products)) {
       todos.value = products.map((product) => ({
@@ -74,9 +95,9 @@ const createDummyProduct = async () => {
       title: 'Test Product',
       description: 'Created from frontend',
       price: 9.99,
-      category_id: 1 // ✅ Must exist in your DB!
+      category_id: 1
     }
-    const response = await createProduct(userId, dummy)
+    const response = await createProduct(dummy)
     console.log('✅ Created product:', response.data)
     await fetchProducts()
   } catch (err) {
@@ -89,7 +110,7 @@ const getSingleProduct = async () => {
   if (!productId) return console.warn("⚠️ No products to fetch")
 
   try {
-    const response = await getProduct(userId, productId)
+    const response = await getProduct(productId)
     console.log(`📦 Product #${productId}:`, response.data)
   } catch (err) {
     console.error(`❌ Failed to get product #${productId}:`, err)
@@ -106,7 +127,7 @@ const updateProductData = async () => {
       price: 100.0,
       category_id: 1
     }
-    const response = await updateProduct(userId, product.id, update)
+    const response = await updateProduct(product.id, update)
     console.log(`✏️ Updated product #${product.id}:`, response.data)
     await fetchProducts()
   } catch (err) {
@@ -119,7 +140,7 @@ const deleteProductEntry = async () => {
   if (!productId) return console.warn("⚠️ No product to delete")
 
   try {
-    await deleteProduct(userId, productId)
+    await deleteProduct(productId)
     console.log(`🗑️ Deleted product #${productId}`)
     await fetchProducts()
   } catch (err) {
@@ -127,14 +148,45 @@ const deleteProductEntry = async () => {
   }
 }
 
-onMounted(() => {
-  const token = localStorage.getItem('authToken')
-  if (token) {
-    api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-    isAuthenticated.value = true
-    fetchProducts()
-  } else {
-    console.warn('🔒 Not logged in. Please authenticate first.')
+const fetchFavorites = async () => {
+  try {
+    const response = await getFavorites()
+    favorites.value = response.data
+    console.log('🌟 Fetched Favorites:', favorites.value)
+  } catch (err) {
+    console.error('❌ Failed to fetch favorites:', err)
   }
+}
+
+const addDummyFavorite = async () => {
+  const product = todos.value[0]
+  if (!product) return console.warn('⚠️ No product available to favorite')
+
+  try {
+    const response = await addFavorite({ product_id: product.id })
+    console.log('✅ Added favorite:', response.data)
+    await fetchFavorites()
+  } catch (err) {
+    console.error('❌ Failed to add favorite:', err)
+  }
+}
+
+const removeFirstFavorite = async () => {
+  const favorite = favorites.value[0]
+  if (!favorite) return console.warn('⚠️ No favorites to remove')
+
+  try {
+    await removeFavorite(favorite.id)
+    console.log(`🗑️ Removed favorite #${favorite.id}`)
+    await fetchFavorites()
+  } catch (err) {
+    console.error(`❌ Failed to remove favorite #${favorite.id}:`, err)
+  }
+}
+
+onMounted(() => {
+  applyAuthHeaders()
+  if (isAuthenticated.value) void fetchProducts()
+  else console.warn('🔒 Not logged in. Please authenticate first.')
 })
 </script>

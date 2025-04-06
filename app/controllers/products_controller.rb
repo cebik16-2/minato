@@ -1,11 +1,11 @@
 puts "🔥 Reloaded ProductsController at #{Time.now}"
 
 class ProductsController < ApplicationController
+  before_action :authenticate_user!, only: %i[new create index show update destroy]
   before_action :set_product, only: %i[show edit update destroy detach_file]
-  before_action :set_user, only: %i[new create index show]
 
   def index
-    @products = Product.page(params[:page]).per(params[:per])
+    @products = current_user.products.page(params[:page]).per(params[:per])
     render json: @products
   end
 
@@ -24,7 +24,7 @@ class ProductsController < ApplicationController
 
   def create
     puts "🔥 LOADED FILE: #{__FILE__}"
-    @product = @user.products.new(product_params.merge(seller_id: @user.id))
+    @product = current_user.products.new(product_params)
 
     if @product.save
       attach_files_to_product(@product)
@@ -63,15 +63,6 @@ class ProductsController < ApplicationController
 
   def set_product
     @product = Product.find(params[:id])
-  end
-
-  def set_user
-    if params[:user_id].present?
-      @user = User.find_by(id: params[:user_id])
-      return render json: { error: "User not found" }, status: :not_found unless @user
-    else
-      @user = current_user
-    end
   end
 
   def product_params

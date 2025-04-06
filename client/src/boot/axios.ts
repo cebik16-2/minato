@@ -1,33 +1,51 @@
-import { boot } from 'quasar/wrappers';
-import axios, { type AxiosInstance } from 'axios';
+import { boot } from 'quasar/wrappers'
+import axios, { type AxiosInstance } from 'axios'
 
 declare module 'vue' {
   interface ComponentCustomProperties {
-    $axios: AxiosInstance;
-    $api: AxiosInstance;
+    $axios: AxiosInstance
+    $api: AxiosInstance
   }
 }
 
-// Be careful when using SSR for cross-request state pollution
-// due to creating a Singleton instance here;
-// If any client changes this (global) instance, it might be a
-// good idea to move this instance creation inside of the
-// "export default () => {}" function below (which runs individually
-// for each client)
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL
 })
 
+// ✅ Automatically add Devise Token Auth headers from localStorage
+api.interceptors.request.use((config) => {
+  const authToken = localStorage.getItem('authToken')
+  if (authToken) {
+    try {
+      const token = JSON.parse(authToken)
+      config.headers['access-token'] = token['access-token']
+      config.headers['client'] = token['client']
+      config.headers['uid'] = token['uid']
+    } catch (e) {
+      console.warn('⚠️ Invalid authToken format in localStorage', e)
+    }
+  }
+  return config
+}, error => Promise.reject(new Error(error)))
+
+// ✅ Automatically update token in localStorage after each response
+api.interceptors.response.use((response) => {
+  const newToken = {
+    'access-token': response.headers['access-token'],
+    client: response.headers['client'],
+    uid: response.headers['uid']
+  }
+
+  if (newToken['access-token'] && newToken.client && newToken.uid) {
+    localStorage.setItem('authToken', JSON.stringify(newToken))
+  }
+
+  return response
+}, error => Promise.reject(new Error(error)))
+
 export default boot(({ app }) => {
-  // for use inside Vue files (Options API) through this.$axios and this.$api
+  app.config.globalProperties.$axios = axios
+  app.config.globalProperties.$api = api
+})
 
-  app.config.globalProperties.$axios = axios;
-  // ^ ^ ^ this will allow you to use this.$axios (for Vue Options API form)
-  //       so you won't necessarily have to import axios in each vue file
-
-  app.config.globalProperties.$api = api;
-  // ^ ^ ^ this will allow you to use this.$api (for Vue Options API form)
-  //       so you can easily perform requests against your app's API
-});
-
-export { api };
+export { api }

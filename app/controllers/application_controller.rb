@@ -1,8 +1,7 @@
-class ApplicationController < ActionController::Base
-  before_action :configure_permitted_parameters, if: :devise_controller?
-  protect_from_forgery with: :null_session, if: -> { request.format.json? }
+class ApplicationController < ActionController::API
+  include DeviseTokenAuth::Concerns::SetUserByToken
 
-  respond_to :json
+  before_action :configure_permitted_parameters, if: :devise_controller?
 
   protected
 

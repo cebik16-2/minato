@@ -1,17 +1,23 @@
 import { api } from '../../../boot/axios'
 
+// 🆗 Get all products (not user-specific)
 export const getAllProducts = () => api.get('/products')
-export const getUserProducts = (userId: string | number) =>
-  api.get(`/users/${userId}/products`)
 
-export const createProduct = (userId: string | number, product: object) =>
-  api.post(`/users/${userId}/products`, { product })
+// ✅ Get products of the currently logged-in user
+export const getUserProducts = () => api.get('/products')
 
-export const getProduct = (userId: number, id: number) =>
-  api.get(`/users/${userId}/products/${id}`)
+// ✅ Create product for current user
+export const createProduct = (product: object) =>
+  api.post('/products', { product })
 
-export const updateProduct = (userId: number, id: number, product: object) =>
-  api.put(`/users/${userId}/products/${id}`, { product })
+// ✅ Get a specific product (you can secure this in the controller)
+export const getProduct = (id: number) =>
+  api.get(`/products/${id}`)
 
-export const deleteProduct = (userId: number, id: number) =>
-  api.delete(`/users/${userId}/products/${id}`)
+// ✅ Update a product belonging to the user
+export const updateProduct = (id: number, product: object) =>
+  api.put(`/products/${id}`, { product })
+
+// ✅ Delete a product
+export const deleteProduct = (id: number) =>
+  api.delete(`/products/${id}`)
