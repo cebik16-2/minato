@@ -12,7 +12,7 @@
 
     <!-- Quick View Modal -->
     <QuickViewModal
-      v-if="quickViewVisible"
+      v-model="quickViewVisible"
       :item="selectedItem"
       @close="quickViewVisible = false"
     />
