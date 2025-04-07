@@ -1,7 +1,11 @@
 <template>
-  <router-view />
+  <MainLayout />
 </template>
 
-<script setup lang="ts">
-//
+<script lang="ts">
+import MainLayout from 'src/layouts/MainLayout.vue'
+export default {
+  name: 'App',
+  components: { MainLayout }
+}
 </script>

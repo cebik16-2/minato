@@ -1,19 +1,21 @@
-import type { RouteRecordRaw } from 'vue-router';
+// src/router/routes.ts
+import type { RouteRecordRaw } from 'vue-router'
 
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
     component: () => import('layouts/MainLayout.vue'),
-    children: [{ path: '', component: () => import('pages/IndexPage.vue') }],
+    children: [
+      {
+        path: '',
+        component: () => import('pages/MarketplacePage.vue') // ✅ Use your real page
+      }
+    ]
   },
-
-  // Always leave this as last one,
-  // but you can also remove it
   {
     path: '/:catchAll(.*)*',
-    component: () => import('pages/ErrorNotFound.vue'),
+    component: () => import('pages/ErrorNotFound.vue')
+  }
+]
 
-  },
-];
-
-export default routes;
+export default routes

@@ -1,106 +1,143 @@
 <template>
   <q-layout view="lHh Lpr lFf">
-    <q-header elevated>
+    <!-- Header -->
+    <q-header elevated class="bg-white text-dark">
       <q-toolbar>
-        <q-btn
-          flat
-          dense
-          round
-          icon="menu"
-          aria-label="Menu"
-          @click="toggleLeftDrawer"
-        />
 
+        <!-- Logo -->
         <q-toolbar-title>
-          Quasar App
+          <q-avatar>
+            <img src="/minato-logo.png" alt="Minato logo" />
+          </q-avatar>
+          Minato
         </q-toolbar-title>
 
-        <div>Quasar v{{ $q.version }}</div>
+        <!-- Spacer -->
+        <q-space />
+
+        <!-- Search -->
+        <q-input
+          standout
+          filled
+          dense
+          debounce="300"
+          v-model="search"
+          placeholder="Search for anything..."
+          class="q-mr-md"
+        >
+          <template v-slot:append>
+            <q-icon name="search" />
+          </template>
+        </q-input>
+
+        <!-- Cart -->
+        <q-btn flat round icon="shopping_cart" @click="showCart = true" />
+
+        <!-- Auth Buttons -->
+        <template v-if="!isAuthenticated">
+          <q-btn flat label="Login" class="q-ml-sm" @click="showLogin = true" />
+          <q-btn flat label="Register" class="q-ml-sm" @click="showRegister = true" />
+        </template>
+        <template v-else>
+          <q-btn flat icon="logout" @click="logout" class="q-ml-sm" />
+        </template>
+
       </q-toolbar>
     </q-header>
 
-    <q-drawer
-      v-model="leftDrawerOpen"
-      show-if-above
-      bordered
-    >
+    <!-- Drawer -->
+    <q-drawer show-if-above v-model="leftDrawerOpen" side="left" bordered>
       <q-list>
-        <q-item-label header>
-          Essential Links
-        </q-item-label>
-
-        <EssentialLink
-          v-for="link in linksList"
-          :key="link.title"
-          v-bind="link"
-        />
+        <q-item-label header>Categories</q-item-label>
+        <q-item
+          clickable
+          v-for="category in categories"
+          :key="category"
+        >
+          <q-item-section>{{ category }}</q-item-section>
+        </q-item>
       </q-list>
     </q-drawer>
 
+    <!-- Page Content (uses routed views) -->
     <q-page-container>
       <router-view />
     </q-page-container>
 
-    <!-- 🔒 Login Modal -->
-    <LoginModal />
+    <!-- Modals -->
+    <LoginModal v-if="showLogin" @close="showLogin = false" />
+    <RegisterModal v-if="showRegister" @close="showRegister = false" />
+    <CartModal v-if="showCart" @close="showCart = false" />
   </q-layout>
 </template>
 
-<script setup lang="ts">
-import { ref } from 'vue'
-import EssentialLink from 'components/EssentialLink.vue'
-import LoginModal from 'components/LoginModal.vue' // 👈 Add this line
+<script lang="ts">
+import { ref, computed } from 'vue'
+import { logout } from 'src/services/api/auth/authApi'
+import { useRouter } from 'vue-router'
 
-import type { EssentialLinkProps } from '@/components/models'
+import LoginModal from 'src/components/modals/LoginModal.vue'
+import RegisterModal from 'src/components/modals/RegisterModal.vue'
+import CartModal from 'src/components/modals/CartModal.vue'
 
-const linksList: EssentialLinkProps[] = [
-  {
-    title: 'Docs',
-    caption: 'quasar.dev',
-    icon: 'school',
-    link: 'https://quasar.dev'
+export default {
+  name: 'MainLayout',
+  components: {
+    LoginModal,
+    RegisterModal,
+    CartModal
   },
-  {
-    title: 'Github',
-    caption: 'github.com/quasarframework',
-    icon: 'code',
-    link: 'https://github.com/quasarframework'
-  },
-  {
-    title: 'Discord Chat Channel',
-    caption: 'chat.quasar.dev',
-    icon: 'chat',
-    link: 'https://chat.quasar.dev'
-  },
-  {
-    title: 'Forum',
-    caption: 'forum.quasar.dev',
-    icon: 'record_voice_over',
-    link: 'https://forum.quasar.dev'
-  },
-  {
-    title: 'Twitter',
-    caption: '@quasarframework',
-    icon: 'rss_feed',
-    link: 'https://twitter.quasar.dev'
-  },
-  {
-    title: 'Facebook',
-    caption: '@QuasarFramework',
-    icon: 'public',
-    link: 'https://facebook.quasar.dev'
-  },
-  {
-    title: 'Quasar Awesome',
-    caption: 'Community Quasar projects',
-    icon: 'favorite',
-    link: 'https://awesome.quasar.dev'
+  setup () {
+    const router = useRouter()
+
+    const search = ref('')
+    const showLogin = ref(false)
+    const showRegister = ref(false)
+    const showCart = ref(false)
+    const leftDrawerOpen = ref(true)
+
+    const categories = [
+      'Electronics',
+      'Fashion',
+      'Home & Garden',
+      'Sport',
+      'Toys',
+      'Motors'
+    ]
+
+    const isAuthenticated = computed(() => {
+      const token = localStorage.getItem('authToken')
+      return !!token
+    })
+
+    const handleLogout = async () => {
+      try {
+        await logout()
+        localStorage.removeItem('authToken')
+        void router.push('/')
+      } catch (err) {
+        console.error('Logout failed:', err)
+      }
+    }
+
+    return {
+      search,
+      showLogin,
+      showRegister,
+      showCart,
+      leftDrawerOpen,
+      categories,
+      isAuthenticated,
+      logout: handleLogout
+    }
   }
-]
-
-const leftDrawerOpen = ref(false)
-
-function toggleLeftDrawer () {
-  leftDrawerOpen.value = !leftDrawerOpen.value
 }
 </script>
+
+<style scoped>
+.q-toolbar-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+</style>

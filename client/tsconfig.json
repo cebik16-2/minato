@@ -35,6 +35,6 @@
       "layouts/*": ["src/layouts/*"]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "src/composables/useAuth.js"],
   "exclude": ["node_modules", "dist", "public"]
 }
