@@ -3,8 +3,8 @@
     <!-- Image -->
     <div class="col-12 col-md-6">
       <q-img
-        :src="item.image"
-        :alt="item.name"
+        :src="item.thumbnail_url || ''"
+        :alt="item.title"
         class="rounded-borders"
         style="max-height: 300px"
       />
@@ -12,8 +12,8 @@
 
     <!-- Info -->
     <div class="col-12 col-md-6">
-      <div class="text-h5 text-bold">{{ item.name }}</div>
-      <div class="text-subtitle1 text-primary q-mt-sm">{{ item.price }}</div>
+      <div class="text-h5 text-bold">{{ item.title }}</div>
+      <div class="text-subtitle1 text-primary q-mt-sm">€ {{ item.price }}</div>
 
       <div class="q-mt-md">
         <q-btn
@@ -36,13 +36,13 @@
 
 <script lang="ts">
 import type { PropType } from 'vue'
-import type { Item } from 'src/types'
+import type { Product } from 'src/types'
 
 export default {
   name: 'ItemDetailSection',
   props: {
     item: {
-      type: Object as PropType<Item>,
+      type: Object as PropType<Product>,
       required: true
     }
   },

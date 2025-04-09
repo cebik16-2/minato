@@ -2,19 +2,22 @@
   <q-dialog v-model="dialog" persistent>
     <q-card v-if="item" style="max-width: 500px; width: 100%">
       <q-card-section class="row items-center q-pb-none">
-        <div class="text-h6">{{ item.name }}</div>
+        <div class="text-h6">{{ item.title }}</div>
         <q-space />
         <q-btn flat round icon="close" @click="$emit('close')" />
       </q-card-section>
 
       <q-card-section>
         <q-img
-          :src="item.image"
-          :alt="item.name"
+          :src="item.thumbnail_url || ''"
+          :alt="item.title"
           class="rounded-borders"
           height="200px"
         />
-        <div class="text-subtitle1 q-mt-md">{{ item.price }}</div>
+        <div class="text-subtitle1 q-mt-md">€ {{ item.price }}</div>
+        <div class="text-caption text-grey-7 q-mt-sm">
+          {{ item.description }}
+        </div>
       </q-card-section>
 
       <q-card-actions align="right">
@@ -32,13 +35,13 @@
 <script lang="ts">
 import { defineComponent, ref, watch } from 'vue'
 import type { PropType } from 'vue'
-import type { Item } from 'src/types'
+import type { Product } from 'src/types'
 
 export default defineComponent({
   name: 'QuickViewModal',
   props: {
     item: {
-      type: Object as PropType<Item | null>,
+      type: Object as PropType<Product | null>,
       required: false
     },
     modelValue: {
@@ -57,7 +60,7 @@ export default defineComponent({
     watch(dialog, (val) => {
       if (!val) {
         emit('close')
-        emit('update:modelValue', false) // keep v-model in sync
+        emit('update:modelValue', false)
       }
     })
 

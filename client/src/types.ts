@@ -118,3 +118,22 @@ export interface Item {
         status: string
         createdAt: string
     }
+
+    export interface Product {
+      id: number
+      title: string
+      price: number
+      description: string
+      category_id: number
+      sku: string
+      product_type: string
+      category_name: string
+      thumbnail_url: string | null
+      image_urls: string[]
+      created_at: string
+      seller: {
+        id: number
+        email: string
+        username?: string
+      }
+    }

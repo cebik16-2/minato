@@ -15,8 +15,8 @@
           :key="item.id"
           class="q-mb-md"
         >
-          <div class="text-subtitle1">{{ item.name }}</div>
-          <div class="text-primary">{{ item.price }}</div>
+          <div class="text-subtitle1">{{ item.title }}</div>
+          <div class="text-primary">€ {{ item.price }}</div>
           <q-btn
             flat
             icon="delete"
@@ -38,7 +38,7 @@
 
 <script lang="ts">
 import { defineComponent, ref } from 'vue'
-import type { Item } from 'src/types'
+import type { Product } from 'src/types'
 
 export default defineComponent({
   name: 'CartModal',
@@ -46,7 +46,7 @@ export default defineComponent({
   setup(_, { emit }) {
     const dialog = ref(true)
 
-    const cart = ref<Item[]>(
+    const cart = ref<Product[]>(
       JSON.parse(localStorage.getItem('cart') || '[]')
     )
 

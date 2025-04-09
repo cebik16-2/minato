@@ -1,12 +1,18 @@
 puts "🔥 Reloaded ProductsController at #{Time.now}"
 
 class ProductsController < ApplicationController
-  before_action :authenticate_user!, only: %i[new create index show update destroy]
+  before_action :authenticate_user!, only: %i[new create show update destroy]
   before_action :set_product, only: %i[show edit update destroy detach_file]
 
+  # Public marketplace index
   def index
-    @products = current_user.products.page(params[:page]).per(params[:per])
-    render json: @products
+    products = Product
+      .includes(:user, image_attachment: :blob)
+      .order(created_at: :desc)
+      .page(params[:page])
+      .per(params[:per_page] || 20)
+
+    render json: products, each_serializer: ProductSerializer, meta: pagination_meta(products)
   end
 
   def show
@@ -75,5 +81,15 @@ class ProductsController < ApplicationController
     params[:product][:files].each do |file|
       product.files.attach(file)
     end
+  end
+
+  def pagination_meta(scope)
+    {
+      current_page: scope.current_page,
+      next_page: scope.next_page,
+      prev_page: scope.prev_page,
+      total_pages: scope.total_pages,
+      total_count: scope.total_count
+    }
   end
 end
