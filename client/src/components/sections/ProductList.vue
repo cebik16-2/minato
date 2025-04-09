@@ -6,7 +6,12 @@
         :key="product.id"
         class="col-12 col-sm-6 col-md-4"
       >
-        <ItemCard :item="product" @view="emitView(product)" />
+        <ItemCard
+          :item="product"
+          :isFavorited="favoritedIds.includes(product.id)"
+          @view="emitView(product)"
+          @toggle-favorite="emitToggleFavorite(product)"
+        />
       </div>
     </div>
 
@@ -16,20 +21,32 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { defineProps, defineEmits } from 'vue'
-import ItemCard from './ItemCard.vue'
+<script lang="ts">
+import type { PropType } from 'vue'
 import type { Product } from 'src/types'
+import ItemCard from './ItemCard.vue'
 
-defineProps<{
-  products: Product[]
-}>()
-
-const emit = defineEmits<{
-  (e: 'view-item', item: Product): void
-}>()
-
-const emitView = (product: Product) => {
-  emit('view-item', product)
+export default {
+  name: 'ProductList',
+  components: { ItemCard },
+  props: {
+    products: {
+      type: Array as PropType<Product[]>,
+      required: true
+    },
+    favoritedIds: {
+      type: Array as PropType<number[]>,
+      required: true
+    }
+  },
+  emits: ['view-item', 'toggle-favorite'],
+  methods: {
+    emitView(product: Product) {
+      this.$emit('view-item', product)
+    },
+    emitToggleFavorite(product: Product) {
+      this.$emit('toggle-favorite', product)
+    }
+  }
 }
 </script>

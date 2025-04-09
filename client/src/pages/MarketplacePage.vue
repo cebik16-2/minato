@@ -3,14 +3,19 @@
     <!-- Banner Carousel -->
     <BannerCarousel :slides="slides" />
 
-    <!-- Product List (with Infinite Scroll) -->
+    <!-- Product List -->
     <q-infinite-scroll
       @load="loadMore"
       :offset="100"
       ref="infiniteScroll"
       :disable="!hasMore"
     >
-      <ProductList :products="products" @view-item="viewItem" />
+      <ProductList
+        :products="products"
+        :favoritedIds="favoritedProductIds"
+        @view-item="viewItem"
+        @toggle-favorite="toggleFavorite"
+      />
 
       <template v-slot:loading>
         <div class="row justify-center q-my-md">
@@ -37,13 +42,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import BannerCarousel from 'src/components/sections/BannerCarousel.vue'
 import ProductList from 'src/components/sections/ProductList.vue'
 import QuickViewModal from 'src/components/modals/QuickViewModal.vue'
 import AddItemModal from 'src/components/modals/AddItemModal.vue'
 import { fetchProducts } from 'src/services/api/products/products'
+import { getFavorites, addFavorite, removeFavorite } from '../services/api/favorites/favoritesApi'
 import type { Product } from 'src/types'
+
+interface Favorite {
+  id: number
+  product_id: number
+}
 
 const slides = [
   '/assets/banner1.jpg',
@@ -59,29 +70,74 @@ const selectedItem = ref<Product | null>(null)
 const quickViewVisible = ref(false)
 const showAddItem = ref(false)
 
-const viewItem = (item: Product) => {
-  selectedItem.value = item
-  quickViewVisible.value = true
+const favoritedProductIds = ref<number[]>([])
+const favoriteMap = ref<Record<number, number>>({})
+
+// 🧠 Load and group favorites
+const loadFavorites = async () => {
+  try {
+    const res = await getFavorites()
+    const favorites = res.data as Favorite[]
+
+    favoritedProductIds.value = favorites.map(fav => fav.product_id)
+    favoriteMap.value = favorites.reduce((acc: Record<number, number>, fav) => {
+      acc[fav.product_id] = fav.id
+      return acc
+    }, {})
+  } catch (err) {
+    console.error('Error loading favorites:', err)
+  }
 }
 
+// ❤️ Toggle favorite
+const toggleFavorite = async (product: Product) => {
+  const isFav = favoritedProductIds.value.includes(product.id)
+
+  try {
+    if (isFav) {
+      const favoriteId = favoriteMap.value[product.id]
+      if (favoriteId !== undefined) {
+        await removeFavorite(favoriteId)
+        favoritedProductIds.value = favoritedProductIds.value.filter(id => id !== product.id)
+        delete favoriteMap.value[product.id]
+      }
+    } else {
+      const res = await addFavorite(product.id)
+      favoritedProductIds.value.push(product.id)
+      favoriteMap.value[product.id] = res.data.id
+    }
+  } catch (err) {
+    console.error('Failed to toggle favorite:', err)
+  }
+}
+
+// 🛒 Cart logic
 const addToCart = (item: Product) => {
   const cart: Product[] = JSON.parse(localStorage.getItem('cart') || '[]')
   cart.push(item)
   localStorage.setItem('cart', JSON.stringify(cart))
 }
 
+// ➕ Add item from modal
 const handleItemAdded = (newItem: Product) => {
   products.value.unshift(newItem)
   showAddItem.value = false
 }
 
+// 👁️ View product (opens modal)
+const viewItem = (item: Product) => {
+  selectedItem.value = item
+  quickViewVisible.value = true
+}
+
+// ⬇️ Infinite Scroll Loader
 const loadMore = async (_index: number, done: (stop?: boolean) => void) => {
   try {
     const res = await fetchProducts(page.value)
 
-    if (!res.meta.next_page || res.data.length === 0) {
+    if (!res.meta?.next_page || res.data.length === 0) {
       hasMore.value = false
-      done(true) // stop scrolling
+      done(true)
       return
     }
 
@@ -96,4 +152,9 @@ const loadMore = async (_index: number, done: (stop?: boolean) => void) => {
 
   done()
 }
+
+// 📦 On Page Load
+onMounted(() => {
+  void loadFavorites()
+})
 </script>

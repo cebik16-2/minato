@@ -43,7 +43,7 @@ import {
   getFavorites,
   addFavorite,
   removeFavorite
-} from '../services/api/favorites/favoriteApi'
+} from '../services/api/favorites/favoritesApi'
 import LoginButton from 'components/LoginButton.vue'
 import ExampleComponent from 'components/ExampleComponent.vue'
 
@@ -163,7 +163,7 @@ const addDummyFavorite = async () => {
   if (!product) return console.warn('⚠️ No product available to favorite')
 
   try {
-    const response = await addFavorite({ product_id: product.id })
+    const response = await addFavorite(product.id)
     console.log('✅ Added favorite:', response.data)
     await fetchFavorites()
   } catch (err) {

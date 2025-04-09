@@ -29,6 +29,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "paths": {
+      "src/*": ["./src/*"],
       "@/*": ["src/*"],
       "components/*": ["src/components/*"],
       "pages/*": ["src/pages/*"],

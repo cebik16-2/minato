@@ -1,7 +1,12 @@
 <template>
   <div class="q-mt-xl">
     <div class="text-h6 q-mb-md">Trending Items</div>
-    <ProductList :products="products" @view-item="$emit('view-item', $event)" />
+    <ProductList
+      :products="products"
+      :favoritedIds="favoritedIds"
+      @view-item="$emit('view-item', $event)"
+      @toggle-favorite="$emit('toggle-favorite', $event)"
+    />
   </div>
 </template>
 
@@ -18,8 +23,12 @@ export default defineComponent({
     products: {
       type: Array as PropType<Product[]>,
       required: true
+    },
+    favoritedIds: {
+      type: Array as PropType<number[]>,
+      required: true
     }
   },
-  emits: ['view-item']
+  emits: ['view-item', 'toggle-favorite']
 })
 </script>

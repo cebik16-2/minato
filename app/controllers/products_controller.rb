@@ -7,7 +7,7 @@ class ProductsController < ApplicationController
   # Public marketplace index
   def index
     products = Product
-      .includes(:user, image_attachment: :blob)
+    .includes(:seller, files_attachments: :blob) # ✅
       .order(created_at: :desc)
       .page(params[:page])
       .per(params[:per_page] || 20)

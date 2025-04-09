@@ -3,7 +3,6 @@
     <!-- Header -->
     <q-header elevated class="bg-white text-dark">
       <q-toolbar>
-
         <!-- Logo -->
         <q-toolbar-title>
           <q-avatar>
@@ -12,7 +11,6 @@
           Minato
         </q-toolbar-title>
 
-        <!-- Spacer -->
         <q-space />
 
         <!-- Search -->
@@ -30,8 +28,18 @@
           </template>
         </q-input>
 
-        <!-- Cart -->
-        <q-btn flat round icon="shopping_cart" @click="showCart = true" />
+        <!-- Cart with Badge -->
+        <div class="q-mr-sm" style="position: relative;">
+          <q-btn flat round icon="shopping_cart" @click="showCart = true" />
+          <q-badge
+            v-if="cartCount > 0"
+            color="red"
+            floating
+            transparent
+            :label="cartCount"
+            style="top: -4px; right: -4px; position: absolute;"
+          />
+        </div>
 
         <!-- Auth Buttons -->
         <template v-if="!isAuthenticated">
@@ -39,9 +47,15 @@
           <q-btn flat label="Register" class="q-ml-sm" @click="showRegister = true" />
         </template>
         <template v-else>
-          <q-btn flat icon="logout" @click="logout" class="q-ml-sm" />
+          <q-btn
+            flat
+            icon="add"
+            label="Add Item"
+            class="q-ml-sm"
+            @click="router.push('/products/new')"
+          />
+          <q-btn flat icon="logout" class="q-ml-sm" @click="logout" />
         </template>
-
       </q-toolbar>
     </q-header>
 
@@ -50,16 +64,16 @@
       <q-list>
         <q-item-label header>Categories</q-item-label>
         <q-item
-          clickable
           v-for="category in categories"
-          :key="category"
+          :key="category.id"
+          clickable
         >
-          <q-item-section>{{ category }}</q-item-section>
+          <q-item-section>{{ category.name }}</q-item-section>
         </q-item>
       </q-list>
     </q-drawer>
 
-    <!-- Page Content (uses routed views) -->
+    <!-- Page Content -->
     <q-page-container>
       <router-view />
     </q-page-container>
@@ -67,18 +81,24 @@
     <!-- Modals -->
     <LoginModal v-if="showLogin" @close="showLogin = false" />
     <RegisterModal v-if="showRegister" @close="showRegister = false" />
-    <CartModal v-if="showCart" @close="showCart = false" />
+    <CartModal v-if="showCart" @close="handleCartClose" />
   </q-layout>
 </template>
 
 <script lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { logout } from 'src/services/api/auth/authApi'
 import { useRouter } from 'vue-router'
+import { getCategories } from 'src/services/api/categories/categories'
 
 import LoginModal from 'src/components/modals/LoginModal.vue'
 import RegisterModal from 'src/components/modals/RegisterModal.vue'
 import CartModal from 'src/components/modals/CartModal.vue'
+
+interface Category {
+  id: number
+  name: string
+}
 
 export default {
   name: 'MainLayout',
@@ -95,19 +115,26 @@ export default {
     const showRegister = ref(false)
     const showCart = ref(false)
     const leftDrawerOpen = ref(true)
+    const categories = ref<Category[]>([])
 
-    const categories = [
-      'Electronics',
-      'Fashion',
-      'Home & Garden',
-      'Sport',
-      'Toys',
-      'Motors'
-    ]
+    onMounted(async () => {
+      try {
+        const res = await getCategories()
+        console.log('📦 Categories API response:', res.data)
+
+        // Adjust this based on actual API format
+        categories.value = Array.isArray(res.data)
+          ? res.data
+          : Array.isArray(res.data.categories)
+            ? res.data.categories
+            : []
+      } catch (err) {
+        console.error('❌ Failed to load categories:', err)
+      }
+    })
 
     const isAuthenticated = computed(() => {
-      const token = localStorage.getItem('authToken')
-      return !!token
+      return !!localStorage.getItem('authToken')
     })
 
     const handleLogout = async () => {
@@ -120,6 +147,20 @@ export default {
       }
     }
 
+    const cartCount = ref(0)
+
+    const updateCartCount = () => {
+      const raw = JSON.parse(localStorage.getItem('cart') || '[]')
+      cartCount.value = Array.isArray(raw) ? raw.length : 0
+    }
+
+    updateCartCount()
+
+    const handleCartClose = () => {
+      showCart.value = false
+      updateCartCount()
+    }
+
     return {
       search,
       showLogin,
@@ -128,7 +169,10 @@ export default {
       leftDrawerOpen,
       categories,
       isAuthenticated,
-      logout: handleLogout
+      logout: handleLogout,
+      cartCount,
+      handleCartClose,
+      router
     }
   }
 }

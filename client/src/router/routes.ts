@@ -8,7 +8,19 @@ const routes: RouteRecordRaw[] = [
     children: [
       {
         path: '',
-        component: () => import('pages/MarketplacePage.vue') // ✅ Use your real page
+        name: 'marketplace',
+        component: () => import('pages/MarketplacePage.vue')
+      },
+      {
+        path: 'product/:id',
+        name: 'product-detail',
+        component: () => import('pages/ProductDetailPage.vue'),
+        props: true
+      },
+      {
+        path: 'products/new',
+        name: 'product-create',
+        component: () => import('pages/ProductCreatePage.vue')
       }
     ]
   },
