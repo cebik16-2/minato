@@ -1,10 +1,10 @@
 <template>
-  <div>
-    <div class="row q-col-gutter-md">
+  <div class="product-list">
+    <div v-if="products.length" class="row q-col-gutter-lg">
       <div
         v-for="product in products"
         :key="product.id"
-        class="col-12 col-sm-6 col-md-4"
+        class="col-12 col-sm-6 col-md-4 col-lg-3"
       >
         <ItemCard
           :item="product"
@@ -15,18 +15,21 @@
       </div>
     </div>
 
-    <div v-if="!products.length" class="text-center q-mt-lg text-grey">
-      No products found.
+    <!-- Empty State -->
+    <div v-else class="q-mt-xl text-center text-grey">
+      <q-icon name="search_off" size="42px" class="q-mb-sm" />
+      <div class="text-subtitle2">No products found.</div>
     </div>
   </div>
 </template>
 
 <script lang="ts">
+import { defineComponent } from 'vue'
 import type { PropType } from 'vue'
 import type { Product } from 'src/types'
 import ItemCard from './ItemCard.vue'
 
-export default {
+export default defineComponent({
   name: 'ProductList',
   components: { ItemCard },
   props: {
@@ -48,5 +51,11 @@ export default {
       this.$emit('toggle-favorite', product)
     }
   }
-}
+})
 </script>
+
+<style scoped>
+.product-list {
+  padding-bottom: 32px;
+}
+</style>

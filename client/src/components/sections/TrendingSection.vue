@@ -1,13 +1,21 @@
 <template>
-  <div class="q-mt-xl">
-    <div class="text-h6 q-mb-md">Trending Items</div>
+  <section class="trending-section q-mt-xl">
+    <div class="section-header row items-center justify-between q-mb-md">
+      <div class="text-h6">🔥 Trending Items</div>
+
+      <!-- Optional: View All / Filters -->
+      <!--
+      <q-btn flat label="View All" size="sm" color="primary" @click="goToAll" />
+      -->
+    </div>
+
     <ProductList
       :products="products"
       :favoritedIds="favoritedIds"
       @view-item="$emit('view-item', $event)"
       @toggle-favorite="$emit('toggle-favorite', $event)"
     />
-  </div>
+  </section>
 </template>
 
 <script lang="ts">
@@ -32,3 +40,14 @@ export default defineComponent({
   emits: ['view-item', 'toggle-favorite']
 })
 </script>
+
+<style scoped>
+.trending-section {
+  padding: 0 12px;
+}
+
+.section-header {
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 6px;
+}
+</style>

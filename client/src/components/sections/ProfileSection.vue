@@ -1,18 +1,32 @@
 <template>
   <div class="q-pa-md">
-    <q-card flat bordered class="q-pa-md">
+    <q-card flat bordered class="profile-card">
       <q-card-section>
-        <div class="text-h6">👤 Your Profile</div>
+        <div class="text-h6 flex items-center">
+          <q-icon name="account_circle" size="md" class="q-mr-sm" />
+          Your Profile
+        </div>
         <q-separator spaced />
-        <div class="q-mt-md">
+
+        <div class="q-mt-md text-body1">
           <div><strong>Email:</strong> {{ email || 'N/A' }}</div>
         </div>
-        <q-btn
-          label="Logout"
-          color="negative"
-          class="q-mt-lg"
-          @click="handleLogout"
-        />
+
+        <!-- Future Enhancements -->
+        <!-- <div class="q-mt-sm text-caption text-grey">
+          Add more profile details like name, role, joined date, etc.
+        </div> -->
+
+        <div class="q-mt-lg">
+          <q-btn
+            label="Logout"
+            color="negative"
+            icon="logout"
+            @click="handleLogout"
+            unelevated
+            class="full-width"
+          />
+        </div>
       </q-card-section>
     </q-card>
   </div>
@@ -32,8 +46,13 @@ export default {
     onMounted(() => {
       const authToken = localStorage.getItem('authToken')
       if (authToken) {
-        const parsed = JSON.parse(authToken)
-        email.value = parsed.uid || null
+        try {
+          const parsed = JSON.parse(authToken)
+          email.value = parsed?.uid || null
+        } catch (e) {
+          console.warn('Invalid token format')
+          email.value = null
+        }
       }
     })
 
@@ -41,7 +60,7 @@ export default {
       try {
         await logout()
         localStorage.removeItem('authToken')
-        void router.push('/') // Redirect to home or login
+        void router.push('/')
       } catch (err) {
         console.error('Logout failed:', err)
       }
@@ -54,3 +73,12 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.profile-card {
+  max-width: 400px;
+  margin: 0 auto;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+</style>
