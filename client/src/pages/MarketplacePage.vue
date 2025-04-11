@@ -56,10 +56,14 @@ interface Favorite {
   product_id: number
 }
 
-const slides = [
-  '/assets/banner1.jpg',
-  '/assets/banner2.jpg',
-  '/assets/banner3.jpg'
+interface Slide {
+  image: string
+}
+
+const slides: Slide[] = [
+  { image: '/assets/banner1.jpg' },
+  { image: '/assets/banner2.jpg' },
+  { image: '/assets/banner3.jpg' }
 ]
 
 const products = ref<Product[]>([])
@@ -77,15 +81,26 @@ const favoriteMap = ref<Record<number, number>>({})
 const loadFavorites = async () => {
   try {
     const res = await getFavorites()
-    const favorites = res.data as Favorite[]
+    console.log('📦 Raw getFavorites response:', res.data)
 
-    favoritedProductIds.value = favorites.map(fav => fav.product_id)
-    favoriteMap.value = favorites.reduce((acc: Record<number, number>, fav) => {
+    // Safe fallback: check if response is an array or contains one
+    const rawFavorites: Favorite[] = Array.isArray(res.data)
+      ? res.data
+      : Array.isArray(res.data?.favorites)
+        ? res.data.favorites
+        : []
+
+    favoritedProductIds.value = rawFavorites.map((fav) => fav.product_id)
+
+    favoriteMap.value = rawFavorites.reduce((acc: Record<number, number>, fav) => {
       acc[fav.product_id] = fav.id
       return acc
     }, {})
+
   } catch (err) {
-    console.error('Error loading favorites:', err)
+    console.error('❌ Error loading favorites:', err)
+    favoritedProductIds.value = []
+    favoriteMap.value = {}
   }
 }
 

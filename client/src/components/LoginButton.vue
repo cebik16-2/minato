@@ -1,19 +1,30 @@
 <template>
-    <div>
-      <q-btn label="🔐 Login" color="primary" @click="show = true" />
-      <LoginModal v-model:show="show" @login-success="handleSuccess" />
-    </div>
+    <q-btn
+      label="Login"
+      color="primary"
+      icon="login"
+      @click="openLogin"
+      class="q-mx-sm"
+    />
   </template>
   
-  <script setup lang="ts">
-  import { ref } from 'vue'
-  import LoginModal from './LoginModal.vue'
+  <script lang="ts">
+  import { defineComponent } from 'vue'
+  import { useAuthStore } from 'src/stores/authStore'
   
-  const show = ref(false)
+  export default defineComponent({
+    name: 'LoginButton',
+    setup () {
+      const authStore = useAuthStore()
   
-  const handleSuccess = () => {
-    // Optional: emit to parent or perform further actions
-    console.log('✅ User logged in')
-  }
+      const openLogin = () => {
+        authStore.openLoginModal()
+      }
+  
+      return {
+        openLogin
+      }
+    }
+  })
   </script>
   

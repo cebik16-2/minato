@@ -43,7 +43,7 @@
 
         <!-- Auth Buttons -->
         <template v-if="!isAuthenticated">
-          <q-btn flat label="Login" class="q-ml-sm" @click="showLogin = true" />
+          <q-btn flat label="Login" class="q-ml-sm" @click="openLoginModal" />
           <q-btn flat label="Register" class="q-ml-sm" @click="showRegister = true" />
         </template>
         <template v-else>
@@ -79,17 +79,18 @@
     </q-page-container>
 
     <!-- Modals -->
-    <LoginModal v-if="showLogin" @close="showLogin = false" />
+    <LoginModal v-if="showLogin" @close="closeLoginModal" />
     <RegisterModal v-if="showRegister" @close="showRegister = false" />
     <CartModal v-if="showCart" @close="handleCartClose" />
   </q-layout>
 </template>
 
 <script lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { logout } from 'src/services/api/auth/authApi'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getCategories } from 'src/services/api/categories/categories'
+import { useAuthStore } from 'src/stores/authStore'
+import { storeToRefs } from 'pinia'
 
 import LoginModal from 'src/components/modals/LoginModal.vue'
 import RegisterModal from 'src/components/modals/RegisterModal.vue'
@@ -109,43 +110,17 @@ export default {
   },
   setup () {
     const router = useRouter()
+    const authStore = useAuthStore()
+    const { isAuthenticated, showLoginModal } = storeToRefs(authStore)
 
     const search = ref('')
-    const showLogin = ref(false)
     const showRegister = ref(false)
     const showCart = ref(false)
     const leftDrawerOpen = ref(true)
     const categories = ref<Category[]>([])
 
-    onMounted(async () => {
-      try {
-        const res = await getCategories()
-        console.log('📦 Categories API response:', res.data)
-
-        // Adjust this based on actual API format
-        categories.value = Array.isArray(res.data)
-          ? res.data
-          : Array.isArray(res.data.categories)
-            ? res.data.categories
-            : []
-      } catch (err) {
-        console.error('❌ Failed to load categories:', err)
-      }
-    })
-
-    const isAuthenticated = computed(() => {
-      return !!localStorage.getItem('authToken')
-    })
-
-    const handleLogout = async () => {
-      try {
-        await logout()
-        localStorage.removeItem('authToken')
-        void router.push('/')
-      } catch (err) {
-        console.error('Logout failed:', err)
-      }
-    }
+    const openLoginModal = () => authStore.openLoginModal()
+    const closeLoginModal = () => authStore.closeLoginModal()
 
     const cartCount = ref(0)
 
@@ -154,25 +129,39 @@ export default {
       cartCount.value = Array.isArray(raw) ? raw.length : 0
     }
 
-    updateCartCount()
-
     const handleCartClose = () => {
       showCart.value = false
       updateCartCount()
     }
 
+    onMounted(async () => {
+      try {
+        const res = await getCategories()
+        categories.value = Array.isArray(res.data)
+          ? res.data
+          : Array.isArray(res.data.categories)
+            ? res.data.categories
+            : []
+      } catch (err) {
+        console.error('❌ Failed to load categories:', err)
+      }
+      updateCartCount()
+    })
+
     return {
+      router,
       search,
-      showLogin,
+      showLogin: showLoginModal,
+      openLoginModal,
+      closeLoginModal,
       showRegister,
       showCart,
       leftDrawerOpen,
       categories,
       isAuthenticated,
-      logout: handleLogout,
+      logout: authStore.logout,
       cartCount,
-      handleCartClose,
-      router
+      handleCartClose
     }
   }
 }

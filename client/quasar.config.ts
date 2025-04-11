@@ -7,7 +7,7 @@ const __dirname = dirname(__filename)
 
 export default configure((ctx) => {
   return {
-    boot: ['i18n', 'axios'],
+    boot: ['i18n', 'axios', 'auth-guard'],
 
     css: ['app.scss'],
 

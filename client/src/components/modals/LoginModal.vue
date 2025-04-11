@@ -1,49 +1,55 @@
-<template>
-  <q-dialog v-model="dialog" persistent>
-    <q-card class="q-pa-md" style="min-width: 300px; max-width: 400px">
-      <q-card-section>
-        <div class="text-h6">Login to Minato</div>
-      </q-card-section>
-
-      <q-card-section>
-        <q-input v-model="email" label="Email" type="email" dense filled class="q-mb-sm" />
-        <q-input v-model="password" label="Password" type="password" dense filled class="q-mb-sm" />
-        <q-btn
-          label="Login"
-          color="primary"
-          class="full-width q-mt-md"
-          @click="handleLogin"
-          :loading="loading"
-        />
-        <q-btn flat label="Cancel" class="full-width q-mt-sm" @click="$emit('close')" />
-      </q-card-section>
-    </q-card>
-  </q-dialog>
-</template>
-
 <script lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { login } from 'src/services/api/auth/authApi'
+import { useAuthStore } from 'src/stores/authStore'
+import { Notify } from 'quasar'
 
 export default {
   name: 'LoginModal',
-  emits: ['close'],
-  setup(_, { emit }) {
+  setup() {
     const dialog = ref(true)
     const email = ref('')
     const password = ref('')
     const loading = ref(false)
 
+    const router = useRouter()
+    const authStore = useAuthStore()
+
     const handleLogin = async () => {
       loading.value = true
       try {
-        await login({ email: email.value, password: password.value })
+        const response = await login({
+          email: email.value,
+          password: password.value
+        })
 
-        // If login succeeds (handled inside authApi), close modal
-        emit('close')
-      } catch (err) {
+        const token = response?.data?.token
+        if (token) {
+          authStore.login(token)
+          Notify.create({
+            type: 'positive',
+            message: 'Login successful!',
+            position: 'top'
+          })
+
+          if (authStore.redirectAfterLogin) {
+            await router.push(authStore.redirectAfterLogin)
+            authStore.redirectAfterLogin = null
+          }
+        } else {
+          throw new Error('No token returned from API')
+        }
+      } catch (err: unknown) {
         console.error('❌ Login failed:', err)
-        // Optional: Show toast or error message here
+
+        const errorMessage = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+
+        Notify.create({
+          type: 'negative',
+          message: errorMessage || 'Login failed. Please check your credentials.',
+          position: 'top'
+        })
       } finally {
         loading.value = false
       }
@@ -59,9 +65,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-.full-width {
-  width: 100%;
-}
-</style>

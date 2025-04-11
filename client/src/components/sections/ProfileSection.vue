@@ -50,7 +50,7 @@ export default {
           const parsed = JSON.parse(authToken)
           email.value = parsed?.uid || null
         } catch (e) {
-          console.warn('Invalid token format')
+          console.warn('Invalid token format', e)
           email.value = null
         }
       }
