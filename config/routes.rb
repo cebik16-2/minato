@@ -1,6 +1,8 @@
 Rails.application.routes.draw do
-  # ✅ Use only Devise Token Auth for authentication
-  mount_devise_token_auth_for 'User', at: 'auth'
+  # ✅ Devise Token Auth with custom confirmations controller
+  mount_devise_token_auth_for 'User', at: 'auth', controllers: {
+    confirmations: 'users/confirmations'
+  }
 
   # 👤 User and product nesting
   resources :users, only: [:index, :show] do
@@ -21,7 +23,7 @@ Rails.application.routes.draw do
     end
   end
 
-  # 📋 Listings route (this was previously outside the block)
+  # 📋 Listings route
   resources :listings, only: [:index, :show]
 
   # 🏠 Welcome page & root

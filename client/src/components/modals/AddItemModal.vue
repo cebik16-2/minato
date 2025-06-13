@@ -8,9 +8,28 @@
       </q-card-section>
 
       <q-card-section>
-        <q-input v-model="form.name" label="Item Name" dense filled class="q-mb-sm" />
-        <q-input v-model="form.price" label="Price (EUR)" type="number" dense filled class="q-mb-sm" />
-        <q-input v-model="form.image" label="Image URL" dense filled class="q-mb-sm" />
+        <q-input
+          v-model="form.name"
+          label="Item Name"
+          dense
+          filled
+          class="q-mb-sm"
+        />
+        <q-input
+          v-model.number="form.price"
+          label="Price (EUR)"
+          type="number"
+          dense
+          filled
+          class="q-mb-sm"
+        />
+        <q-input
+          v-model="form.image"
+          label="Image URL"
+          dense
+          filled
+          class="q-mb-sm"
+        />
         <q-btn
           label="Add Item"
           color="primary"
@@ -41,21 +60,26 @@ export default defineComponent({
 
     const form = ref({
       name: '',
-      price: '',
+      price: 0,
       image: ''
     })
 
-    // eslint-disable-next-line @typescript-eslint/require-await
     const handleAdd = () => {
-      if (!form.value.name || !form.value.price || !form.value.image) {
-        return alert('Please fill in all fields')
+      const trimmedName = form.value.name.trim()
+      const trimmedImage = form.value.image.trim()
+
+      if (!trimmedName || !form.value.price || !trimmedImage) {
+        alert('Please fill in all fields correctly.')
+        return
       }
 
       loading.value = true
       try {
         emit('item-added', {
-          ...form.value,
-          id: Date.now()
+          id: Date.now(),
+          name: trimmedName,
+          price: form.value.price,
+          image: trimmedImage
         })
         emit('close')
       } catch (err) {

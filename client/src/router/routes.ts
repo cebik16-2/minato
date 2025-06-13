@@ -22,6 +22,10 @@ const routes: RouteRecordRaw[] = [
         name: 'product-create',
         component: () => import('pages/ProductCreatePage.vue'),
         meta: { requiresAuth: true } // Only authenticated users can create products
+      },
+      {
+        path: '/auth/callback',
+        component: () => import('pages/AuthCallback.vue')
       }
     ]
   },

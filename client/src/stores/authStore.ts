@@ -1,8 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { api } from 'src/boot/axios'
 
 export const useAuthStore = defineStore('auth', () => {
-  const isAuthenticated = ref(!!localStorage.getItem('authToken'))
+  const storedToken = localStorage.getItem('authToken')
+  const isAuthenticated = ref(!!storedToken)
   const showLoginModal = ref(false)
   const redirectAfterLogin = ref<string | null>(null)
 
@@ -17,16 +19,42 @@ export const useAuthStore = defineStore('auth', () => {
     showLoginModal.value = false
   }
 
-  // We’ll remove useRouter from here and handle redirect from the caller instead
-  const login = (token: string) => {
-    localStorage.setItem('authToken', token)
+  const login = (token: {
+    'access-token': string
+    client: string
+    uid: string
+  }) => {
+    localStorage.setItem('authToken', JSON.stringify(token))
+
+    api.defaults.headers.common['access-token'] = token['access-token']
+    api.defaults.headers.common['client'] = token.client
+    api.defaults.headers.common['uid'] = token.uid
+
     isAuthenticated.value = true
     closeLoginModal()
   }
 
   const logout = () => {
     localStorage.removeItem('authToken')
+
+    delete api.defaults.headers.common['access-token']
+    delete api.defaults.headers.common['client']
+    delete api.defaults.headers.common['uid']
+
     isAuthenticated.value = false
+  }
+
+  // Restore auth headers on startup if available
+  if (storedToken) {
+    try {
+      const parsed = JSON.parse(storedToken)
+      api.defaults.headers.common['access-token'] = parsed['access-token']
+      api.defaults.headers.common['client'] = parsed.client
+      api.defaults.headers.common['uid'] = parsed.uid
+    } catch {
+      console.warn('Invalid auth token in localStorage, clearing it.')
+      localStorage.removeItem('authToken')
+    }
   }
 
   return {
