@@ -4,8 +4,13 @@ set -e
 # Always use correct Ruby
 export PATH="$HOME/.rubies/ruby-3.2.2/bin:$PATH"
 
+# 🚀 Force production mode so debug/prelude isn't loaded
+export RAILS_ENV=production
+export NODE_ENV=production
+
 echo "[INFO] Ruby version: $(ruby -v)"
 echo "[INFO] Gem version: $(gem -v)"
+echo "[INFO] Rails environment: $RAILS_ENV"
 
 # Ensure PostgreSQL dev headers exist
 if ! dpkg -s libpq-dev >/dev/null 2>&1; then
@@ -42,3 +47,4 @@ echo "[INFO] Precompiling Rails assets..."
 bundle _${BUNDLER_VERSION}_ exec rake assets:precompile
 
 echo "[INFO] ✅ Rails backend build completed successfully."
+echo "[INFO] Verifying Ruby environment..."
