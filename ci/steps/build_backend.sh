@@ -47,12 +47,11 @@ if [ -z "$SECRET_KEY_BASE" ]; then
   echo "[INFO] Generating temporary SECRET_KEY_BASE for build..."
   export SECRET_KEY_BASE=$(ruby -rsecurerandom -e 'puts SecureRandom.hex(64)')
 fi
-
 echo "[INFO] Using SECRET_KEY_BASE: ${SECRET_KEY_BASE:0:8}********"
 
-# Precompile Rails assets
-echo "[INFO] Precompiling Rails assets..."
-bundle _${BUNDLER_VERSION}_ exec rake assets:precompile
+# Precompile Rails assets but skip Yarn/JS bundling
+echo "[INFO] Precompiling Rails assets (skipping JS bundling)..."
+bundle _${BUNDLER_VERSION}_ exec rake assets:precompile SKIP_YARN_INSTALL=true
 
 echo "[INFO] ✅ Rails backend build completed successfully."
 echo "[INFO] Verifying Ruby environment..."
