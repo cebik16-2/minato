@@ -4,23 +4,31 @@ TARGET=$1
 
 API_SERVER="minato-api"
 API_USER="minato"
+
+# These are the target directories on the API server
 FRONTEND_DIR="/var/www/minato-frontend"
 BACKEND_DIR="/var/www/minato-backend"
 
 echo "[DEPLOY] Deploying Minato to ${API_SERVER}..."
 
-# Deploy frontend
-echo "[DEPLOY] Uploading frontend..."
-rsync -avz --delete ./frontend/dist/ ${API_USER}@${API_SERVER}:${FRONTEND_DIR}
+# 1️⃣ Deploy frontend (Quasar build output)
+echo "[DEPLOY] Uploading frontend build..."
+rsync -avz --delete ./client/dist/spa/ ${API_USER}@${API_SERVER}:${FRONTEND_DIR}
 
-# Deploy backend
+# 2️⃣ Deploy backend (Rails app)
 echo "[DEPLOY] Uploading backend..."
-rsync -avz --delete ./backend/ ${API_USER}@${API_SERVER}:${BACKEND_DIR}
+# We exclude node_modules and tmp to speed up sync
+rsync -avz --delete \
+    --exclude=node_modules \
+    --exclude=tmp \
+    ./ ${API_USER}@${API_SERVER}:${BACKEND_DIR}
 
-# Restart services on API server
+# 3️⃣ Restart services on API server
 echo "[DEPLOY] Restarting services..."
 ssh ${API_USER}@${API_SERVER} "sudo systemctl restart minato-backend"
 ssh ${API_USER}@${API_SERVER} "sudo systemctl restart minato-frontend"
 
 echo "[DEPLOY] Deployment completed."
-echo "[DEPLOY] Deployment to ${API_SERVER} completed successfully."
+echo "[DEPLOY] Minato is now live on ${API_SERVER}!"
+echo "[DEPLOY] Frontend is available at http://${API_SERVER}/"
+echo "[DEPLOY] Backend API is available at http://${API_SERVER}/api/v1/"
