@@ -1,0 +1,71 @@
+pipeline {
+    agent { label 'minato-ci' }
+
+    environment {
+        NVM_DIR       = "/home/minato/.nvm"
+        DEPLOY_SCRIPT = "ci/deploy-wrapper.sh"
+        BUILD_DIR     = "/opt/jenkins/Minato-packaging"
+        NODE_VERSION  = "18.20.2"
+        RUBY_VERSION  = "3.2.2"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'feature/quasar-spa',
+                    url: 'git@github.com:cebik16-2/minato.git'
+            }
+        }
+
+        stage('Prepare Build Directory') {
+            steps {
+                sh "bash ci/steps/prepare_build.sh"
+            }
+        }
+
+        stage('Verify Node.js') {
+            steps {
+                sh "bash ci/steps/verify_node.sh ${NODE_VERSION}"
+            }
+        }
+
+        stage('Verify Ruby') {
+            steps {
+                sh "bash ci/steps/verify_ruby.sh ${RUBY_VERSION}"
+            }
+        }
+
+        stage('Build Frontend') {
+            steps {
+                sh "bash ci/steps/build_frontend.sh ${NODE_VERSION}"
+            }
+        }
+
+        stage('Build Backend') {
+            steps {
+                sh "bash ci/steps/build_backend.sh ${RUBY_VERSION}"
+            }
+        }
+
+        stage('Deploy to API Server') {
+            steps {
+                sh "bash ${DEPLOY_SCRIPT} production"
+            }
+        }
+
+        stage('Post-Deploy Verification') {
+            parallel {
+                stage('Check API Health') {
+                    steps {
+                        sh "curl -f http://minato-api:3000/health || exit 1"
+                    }
+                }
+                stage('Check Frontend') {
+                    steps {
+                        sh "curl -f http://minato.stevebytesnest.com || exit 1"
+                    }
+                }
+            }
+        }
+    }
+}
