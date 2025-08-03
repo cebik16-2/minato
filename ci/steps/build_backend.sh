@@ -42,12 +42,13 @@ echo "[INFO] Installing production gems..."
 bundle _${BUNDLER_VERSION}_ config set --local without 'development test'
 bundle _${BUNDLER_VERSION}_ install --jobs=4 --retry=3
 
-#Secrets
+# Generate a SECRET_KEY_BASE if not already set
 if [ -z "$SECRET_KEY_BASE" ]; then
   echo "[INFO] Generating temporary SECRET_KEY_BASE for build..."
-  export SECRET_KEY_BASE=$(bundle exec rake secret)
+  export SECRET_KEY_BASE=$(ruby -rsecurerandom -e 'puts SecureRandom.hex(64)')
 fi
-echo "[INFO] Using SECRET_KEY_BASE: $SECRET_KEY_BASE"
+
+echo "[INFO] Using SECRET_KEY_BASE: ${SECRET_KEY_BASE:0:8}********"
 
 # Precompile Rails assets
 echo "[INFO] Precompiling Rails assets..."
