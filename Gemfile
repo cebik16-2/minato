@@ -46,17 +46,16 @@ gem "thruster", require: false
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 # gem "image_processing", "~> 1.2"
 
-group :development, :test do
-  # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
-  group :development do
+group :development do
   gem "debug", platforms: %i[mri mingw x64_mingw], require: "debug/prelude"
+  # Static analysis for security vulnerabilities
+  gem "brakeman", require: false
+  # Omakase Ruby styling
+  gem "rubocop-rails-omakase", require: false
 end
 
-  # Static analysis for security vulnerabilities [https://brakemanscanner.org/]
-  gem "brakeman", require: false
-
-  # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
-  gem "rubocop-rails-omakase", require: false
+group :test do
+  # put test-only gems here if needed
 end
 
 group :development do
