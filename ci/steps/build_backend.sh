@@ -1,10 +1,8 @@
 #!/bin/bash
 set -e
 
-# Always use correct Ruby
+# 🔧 Set paths and env
 export PATH="$HOME/.rubies/ruby-3.2.2/bin:$PATH"
-
-# 🚀 Force production mode so debug/prelude isn't loaded
 export RAILS_ENV=production
 export NODE_ENV=production
 
@@ -12,14 +10,14 @@ echo "[INFO] Ruby version: $(ruby -v)"
 echo "[INFO] Gem version: $(gem -v)"
 echo "[INFO] Rails environment: $RAILS_ENV"
 
-# Ensure PostgreSQL dev headers exist
+# Ensure PostgreSQL headers exist
 if ! dpkg -s libpq-dev >/dev/null 2>&1; then
   echo "[INFO] Installing libpq-dev..."
   sudo apt-get update -y
   sudo apt-get install -y libpq-dev
 fi
 
-# Detect correct Bundler version from Gemfile.lock
+# Determine Bundler version from Gemfile.lock
 BUNDLER_VERSION=$(grep -A 1 "BUNDLED WITH" Gemfile.lock | tail -n 1 | tr -d ' ')
 if [ -z "$BUNDLER_VERSION" ]; then
   echo "[ERROR] Could not detect Bundler version from Gemfile.lock"
@@ -27,20 +25,28 @@ if [ -z "$BUNDLER_VERSION" ]; then
 fi
 echo "[INFO] Using Bundler version: $BUNDLER_VERSION"
 
-# Install Bundler if missing
+# Install matching bundler if not present
 if ! gem list bundler -i -v "$BUNDLER_VERSION" >/dev/null 2>&1; then
   echo "[INFO] Installing bundler $BUNDLER_VERSION..."
   gem install bundler -v "$BUNDLER_VERSION"
 fi
 
-# Remove any leftover gems from previous builds (like debug)
+# Clean up any broken gemspecs
 echo "[INFO] Cleaning up old gems..."
 bundle _${BUNDLER_VERSION}_ clean --force || true
 
-# Install gems without dev/test groups
+# Install production gems
 echo "[INFO] Installing production gems..."
 bundle _${BUNDLER_VERSION}_ config set --local without 'development test'
 bundle _${BUNDLER_VERSION}_ install --jobs=4 --retry=3
+
+# Install JS deps and run JS build (vite)
+echo "[INFO] Installing JS dependencies..."
+yarn install
+
+echo "[INFO] Building JS using local vite..."
+export PATH="./node_modules/.bin:$PATH"
+yarn build
 
 # Generate a SECRET_KEY_BASE if not already set
 if [ -z "$SECRET_KEY_BASE" ]; then
@@ -49,9 +55,8 @@ if [ -z "$SECRET_KEY_BASE" ]; then
 fi
 echo "[INFO] Using SECRET_KEY_BASE: ${SECRET_KEY_BASE:0:8}********"
 
-# Precompile Rails assets but skip Yarn/JS bundling
-echo "[INFO] Precompiling Rails assets (skipping JS bundling)..."
-bundle _${BUNDLER_VERSION}_ exec rake assets:precompile SKIP_YARN_INSTALL=true
+# Precompile Rails assets (this will now work since vite already ran)
+echo "[INFO] Precompiling Rails assets..."
+bundle _${BUNDLER_VERSION}_ exec rake assets:precompile
 
 echo "[INFO] ✅ Rails backend build completed successfully."
-echo "[INFO] Verifying Ruby environment..."
