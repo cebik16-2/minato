@@ -40,14 +40,6 @@ echo "[INFO] Installing production gems..."
 bundle _${BUNDLER_VERSION}_ config set --local without 'development test'
 bundle _${BUNDLER_VERSION}_ install --jobs=4 --retry=3
 
-# Install JS deps and run JS build (vite)
-echo "[INFO] Installing JS dependencies..."
-yarn install
-
-echo "[INFO] Building JS using local vite..."
-export PATH="./node_modules/.bin:$PATH"
-yarn build
-
 # Generate a SECRET_KEY_BASE if not already set
 if [ -z "$SECRET_KEY_BASE" ]; then
   echo "[INFO] Generating temporary SECRET_KEY_BASE for build..."
@@ -55,8 +47,8 @@ if [ -z "$SECRET_KEY_BASE" ]; then
 fi
 echo "[INFO] Using SECRET_KEY_BASE: ${SECRET_KEY_BASE:0:8}********"
 
-# Precompile Rails assets (this will now work since vite already ran)
-echo "[INFO] Precompiling Rails assets..."
-bundle _${BUNDLER_VERSION}_ exec rake assets:precompile
+# ✅ Precompile Rails assets without JS bundling
+echo "[INFO] Precompiling Rails assets (skipping JS bundling)..."
+bundle _${BUNDLER_VERSION}_ exec rake assets:precompile SKIP_YARN_BUILD=true
 
 echo "[INFO] ✅ Rails backend build completed successfully."
