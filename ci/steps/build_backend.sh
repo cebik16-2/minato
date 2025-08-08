@@ -49,6 +49,6 @@ echo "[INFO] Using SECRET_KEY_BASE: ${SECRET_KEY_BASE:0:8}********"
 
 # ✅ Precompile Rails assets without JS bundling
 echo "[INFO] Precompiling Rails assets (skipping JS bundling)..."
-bundle _${BUNDLER_VERSION}_ exec rake assets:precompile SKIP_ASSET_BUNDLING=true
+bundle _${BUNDLER_VERSION}_ exec rake assets:precompile
 
 echo "[INFO] ✅ Rails backend build completed successfully."
