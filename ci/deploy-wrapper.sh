@@ -52,11 +52,11 @@ fi
 
 # 4️⃣ Restart services
 echo "[DEPLOY] Restarting services..."
-ssh ${API_USER}@${API_SERVER} "sudo systemctl restart minato-backend" || {
+ssh ${API_USER}@${API_SERVER} "systemctl restart minato-backend" || {
     echo "[DEPLOY] ❌ Failed to restart minato-backend."
     exit 1
 }
-ssh ${API_USER}@${API_SERVER} "sudo systemctl restart minato-frontend" || {
+ssh ${API_USER}@${API_SERVER} "systemctl restart minato-frontend" || {
     echo "[DEPLOY] ❌ Failed to restart minato-frontend."
     exit 1
 }
