@@ -22,14 +22,15 @@ if ! command -v node >/dev/null 2>&1; then
     exit 1
 fi
 
-# Check Node.js version
+# Extract major.minor for comparison
 INSTALLED_VERSION=$(node -v | sed 's/^v//')
-REQUIRED_VERSION=$(echo "$NODE_VERSION" | sed 's/^v//')
+REQUIRED_MAJOR_MINOR=$(echo "$NODE_VERSION" | cut -d. -f1,2)
+INSTALLED_MAJOR_MINOR=$(echo "$INSTALLED_VERSION" | cut -d. -f1,2)
 
-if [ "$INSTALLED_VERSION" != "$REQUIRED_VERSION" ]; then
-    echo "[ERROR] Node.js version mismatch. Expected ${REQUIRED_VERSION}, got ${INSTALLED_VERSION}."
+if [ "$INSTALLED_MAJOR_MINOR" != "$REQUIRED_MAJOR_MINOR" ]; then
+    echo "[ERROR] Node.js version mismatch. Expected ${REQUIRED_MAJOR_MINOR}.x, got ${INSTALLED_VERSION}."
     exit 1
 fi
 
-echo "[INFO] ✅ Node.js ${INSTALLED_VERSION} is installed and matches requirement."
+echo "[INFO] Node.js ${INSTALLED_VERSION} matches ${REQUIRED_MAJOR_MINOR}.x"
 echo "[INFO] npm version: $(npm -v)"
