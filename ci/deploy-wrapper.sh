@@ -49,7 +49,7 @@ fi
 echo "[DEPLOY] Preparing database and installing gems..."
 ssh ${API_USER}@${API_SERVER} bash -s <<EOF
     set -euo pipefail
-    export PATH=\$HOME/.rubies/ruby-3.0.2/bin:\$PATH
+    export PATH=\$HOME/.rubies/ruby-6/bin:\$PATH
     export DB_HOST='${DB_HOST}'
     export MINATO_DATABASE_USERNAME='${MINATO_DATABASE_USERNAME}'
     export MINATO_DATABASE_PASSWORD='${MINATO_DATABASE_PASSWORD}'
@@ -66,7 +66,7 @@ ssh ${API_USER}@${API_SERVER} bash -s <<EOF
 
     cd ${BACKEND_DIR}
 
-    # Install correct gems for Ruby 3.0.2
+    # Install correct gems for Ruby 3.0.6
     bundle install --deployment --without development test
 
     # Run migrations
@@ -77,7 +77,7 @@ EOF
 echo "[DEPLOY] Precompiling backend assets..."
 ssh ${API_USER}@${API_SERVER} bash -s <<EOF
     set -euo pipefail
-    export PATH=\$HOME/.rubies/ruby-3.0.2/bin:\$PATH
+    export PATH=\$HOME/.rubies/ruby-3.0.6/bin:\$PATH
     export DB_HOST='${DB_HOST}'
     export MINATO_DATABASE_USERNAME='${MINATO_DATABASE_USERNAME}'
     export MINATO_DATABASE_PASSWORD='${MINATO_DATABASE_PASSWORD}'
