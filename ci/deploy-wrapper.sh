@@ -45,31 +45,48 @@ else
     exit 1
 fi
 
-# 3️⃣ Ensure queue DB exists & run migrations
-echo "[DEPLOY] Preparing database..."
-ssh ${API_USER}@${API_SERVER} "
-    export PGPASSWORD='${MINATO_DATABASE_PASSWORD}' &&
-    psql -U ${MINATO_DATABASE_USERNAME} -h ${DB_HOST} -d postgres \
-        -c \"CREATE DATABASE minato_queue_production OWNER ${MINATO_DATABASE_USERNAME};\" || true &&
-    cd ${BACKEND_DIR} &&
-    export PATH=\$HOME/.rubies/ruby-3.2.2/bin:\$PATH &&
-    export DB_HOST='${DB_HOST}' &&
-    export MINATO_DATABASE_USERNAME='${MINATO_DATABASE_USERNAME}' &&
-    export MINATO_DATABASE_PASSWORD='${MINATO_DATABASE_PASSWORD}' &&
+# 3️⃣ Ensure queue DB exists, install gems & run migrations
+echo "[DEPLOY] Preparing database and installing gems..."
+ssh ${API_USER}@${API_SERVER} bash -s <<EOF
+    set -euo pipefail
+    export PATH=\$HOME/.rubies/ruby-3.0.2/bin:\$PATH
+    export DB_HOST='${DB_HOST}'
+    export MINATO_DATABASE_USERNAME='${MINATO_DATABASE_USERNAME}'
+    export MINATO_DATABASE_PASSWORD='${MINATO_DATABASE_PASSWORD}'
+    export PGPASSWORD='${MINATO_DATABASE_PASSWORD}'
+
+    echo "[INFO] Ruby version: \$(ruby -v)"
+    echo "[INFO] Bundler version: \$(bundle -v)"
+
+    # Ensure DB exists
+    psql -U \${MINATO_DATABASE_USERNAME} -h \${DB_HOST} -d postgres \
+        -tc "SELECT 1 FROM pg_database WHERE datname='minato_queue_production'" | grep -q 1 || \
+        psql -U \${MINATO_DATABASE_USERNAME} -h \${DB_HOST} -d postgres \
+            -c "CREATE DATABASE minato_queue_production OWNER \${MINATO_DATABASE_USERNAME};"
+
+    cd ${BACKEND_DIR}
+
+    # Install correct gems for Ruby 3.0.2
+    bundle install --deployment --without development test
+
+    # Run migrations
     bundle exec rake db:migrate RAILS_ENV=production
-" || { echo "[DEPLOY] ❌ Migrations failed."; exit 1; }
+EOF
 
-# 4️⃣ Precompile assets & restart services
+# 4️⃣ Precompile assets
 echo "[DEPLOY] Precompiling backend assets..."
-ssh ${API_USER}@${API_SERVER} "
-    cd ${BACKEND_DIR} &&
-    export PATH=\$HOME/.rubies/ruby-3.2.2/bin:\$PATH &&
-    export DB_HOST='${DB_HOST}' &&
-    export MINATO_DATABASE_USERNAME='${MINATO_DATABASE_USERNAME}' &&
-    export MINATO_DATABASE_PASSWORD='${MINATO_DATABASE_PASSWORD}' &&
-    RAILS_ENV=production bundle exec rails assets:precompile
-" || { echo "[DEPLOY] ❌ Asset precompile failed."; exit 1; }
+ssh ${API_USER}@${API_SERVER} bash -s <<EOF
+    set -euo pipefail
+    export PATH=\$HOME/.rubies/ruby-3.0.2/bin:\$PATH
+    export DB_HOST='${DB_HOST}'
+    export MINATO_DATABASE_USERNAME='${MINATO_DATABASE_USERNAME}'
+    export MINATO_DATABASE_PASSWORD='${MINATO_DATABASE_PASSWORD}'
 
+    cd ${BACKEND_DIR}
+    bundle exec rails assets:precompile RAILS_ENV=production
+EOF
+
+# 5️⃣ Restart services
 echo "[DEPLOY] Restarting services..."
 ssh ${API_USER}@${API_SERVER} "systemctl restart minato-backend" || { echo "[DEPLOY] ❌ Failed to restart backend."; exit 1; }
 ssh ${API_USER}@${API_SERVER} "systemctl restart minato-frontend" || { echo "[DEPLOY] ❌ Failed to restart frontend."; exit 1; }
@@ -78,5 +95,3 @@ ssh ${API_USER}@${API_SERVER} "systemctl restart minato-frontend" || { echo "[DE
 echo "[DEPLOY] ✅ Deployment completed successfully!"
 echo "[DEPLOY] Frontend available at: http://${API_SERVER}/"
 echo "[DEPLOY] Backend API available at: http://${API_SERVER}/api/v1/"
-
-exit 0

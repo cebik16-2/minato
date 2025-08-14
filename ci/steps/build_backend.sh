@@ -7,7 +7,7 @@ set -euo pipefail
 : "${MINATO_DATABASE_PASSWORD:?MINATO_DATABASE_PASSWORD is not set}"
 
 # Set Ruby paths and environments
-export PATH="$HOME/.rubies/ruby-3.2.2/bin:$PATH"
+export PATH="$HOME/.rubies/ruby-3.0.2/bin:$PATH"
 export RAILS_ENV=production
 export NODE_ENV=production
 
