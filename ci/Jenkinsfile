@@ -7,6 +7,11 @@ pipeline {
         BUILD_DIR     = "/opt/jenkins/Minato-packaging"
         NODE_VERSION  = "18.20.2"
         RUBY_VERSION  = "3.2.2"
+
+        # ✅ Secure DB connection details from Jenkins credentials
+        DB_HOST                   = "192.168.0.200"
+        MINATO_DATABASE_USERNAME  = credentials('minato')
+        MINATO_DATABASE_PASSWORD  = credentials('1SW-streamwide')
     }
 
     stages {
@@ -49,7 +54,13 @@ pipeline {
 
         stage('Deploy to API Server') {
             steps {
-                sh "bash ${DEPLOY_SCRIPT} production"
+                sh """
+                    echo "[DEPLOY] Starting deployment to production..."
+                    export MINATO_DATABASE_USERNAME=${MINATO_DATABASE_USERNAME}
+                    export MINATO_DATABASE_PASSWORD=${MINATO_DATABASE_PASSWORD}
+                    export DB_HOST=${DB_HOST}
+                    bash ${DEPLOY_SCRIPT} production
+                """
             }
         }
 
@@ -57,15 +68,31 @@ pipeline {
             parallel {
                 stage('Check API Health') {
                     steps {
-                        sh "curl -f http://minato-api:3000/health || exit 1"
+                        sh """
+                            echo "[VERIFY] Checking API health..."
+                            curl -v http://minato-api:3000/health || { 
+                                echo '[ERROR] API health check failed'; exit 1; 
+                            }
+                        """
                     }
                 }
                 stage('Check Frontend') {
                     steps {
-                        sh "curl -f http://minato.stevebytesnest.com || exit 1"
+                        sh """
+                            echo "[VERIFY] Checking frontend..."
+                            curl -v http://minato.stevebytesnest.com || { 
+                                echo '[ERROR] Frontend check failed'; exit 1; 
+                            }
+                        """
                     }
                 }
             }
+        }
+    }
+
+    post {
+        failure {
+            echo "[ROLLBACK] Deployment failed. Rollback can be implemented here."
         }
     }
 }

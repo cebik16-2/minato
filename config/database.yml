@@ -2,9 +2,9 @@ default: &default
   adapter: postgresql
   encoding: unicode
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  host: <%= ENV.fetch("DB_HOST", "localhost") %>  # Use "localhost" instead of "postgres"
-  username: <%= ENV.fetch("MINATO_DATABASE_USERNAME", "minato") %>
-  password: <%= ENV.fetch("MINATO_DATABASE_PASSWORD", "minato") %>
+  host: <%= ENV.fetch("DB_HOST", "localhost") %>
+  username: <%= ENV.fetch("MINATO_DATABASE_USERNAME") %>
+  password: <%= ENV.fetch("MINATO_DATABASE_PASSWORD") %>
   port: <%= ENV.fetch("DB_PORT", 5432) %>
 
 development:
@@ -19,5 +19,10 @@ production:
   primary: &primary_production
     <<: *default
     database: minato_production
+    host: <%= ENV.fetch("DB_HOST", "192.168.0.200") %>
     username: <%= ENV["MINATO_DATABASE_USERNAME"] %>
     password: <%= ENV["MINATO_DATABASE_PASSWORD"] %>
+
+  queue:
+    <<: *primary_production
+    database: minato_queue_production
