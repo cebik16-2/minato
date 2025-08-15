@@ -117,15 +117,16 @@ pipeline {
 
     stage('Deploy to API Server') {
       steps {
+        echo "[DEPLOY] ENTER stage Deploy to API Server"
         withCredentials([
-          sshUserPrivateKey(credentialsId: 'minato-ssh', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER'),
-          // use the same DB creds as above (secret text)
+          // SSH key you actually have (ID = Minato user’s UUID)
+          sshUserPrivateKey(credentialsId: 'd8240dfb-3e70-43b2-9d8c-172c8d6f8078', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER'),
+          // DB creds as separate secret-text vars
           string(credentialsId: 'minato-db-username', variable: 'MINATO_DATABASE_USERNAME'),
           string(credentialsId: 'minato-db-password', variable: 'MINATO_DATABASE_PASSWORD'),
-          // optional DB host override from Jenkins creds (kept if you already created it)
-          string(credentialsId: 'db-host',               variable: 'DB_HOST'),
-          string(credentialsId: 'rails-secret-key-base', variable: 'SECRET_KEY_BASE'),
-          string(credentialsId: 'rails-master-key',      variable: 'RAILS_MASTER_KEY')
+          // Rails SECRET_KEY_BASE you actually have
+          string(credentialsId: 'MINATO_SECRET_KEY_BASE', variable: 'SECRET_KEY_BASE')
+          // (No rails-master-key, no db-host — not present in your store)
         ]) {
           sh '''#!/usr/bin/env bash
             set -euxo pipefail
@@ -142,13 +143,14 @@ pipeline {
 
             # Pass env to script without echoing secrets
             export API_SERVER SERVICE_NAME RUBY_VERSION
-            export DB_HOST MINATO_DATABASE_USERNAME MINATO_DATABASE_PASSWORD SECRET_KEY_BASE RAILS_MASTER_KEY
+            export DB_HOST MINATO_DATABASE_USERNAME MINATO_DATABASE_PASSWORD SECRET_KEY_BASE
 
             bash ${DEPLOY_SCRIPT}
           '''
         }
       }
     }
+
 
     stage('Post-Deploy Verification') {
       parallel {
