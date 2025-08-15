@@ -7,7 +7,7 @@ pipeline {
 
   environment {
     NVM_DIR       = "/home/minato/.nvm"
-    DEPLOY_SCRIPT = "ci/deploy-wrapper.sh"   // <- correct path
+    DEPLOY_SCRIPT = "ci/deploy-wrapper.sh"
     BUILD_DIR     = "/opt/jenkins/Minato-packaging"
     NODE_VERSION  = "18.20.2"
     RUBY_VERSION  = "3.2.2"
@@ -86,9 +86,10 @@ pipeline {
       steps {
         echo "[BB] ENTER stage Build Backend"
         withCredentials([
-          usernamePassword(credentialsId: 'pg-minato', usernameVariable: 'MINATO_DATABASE_USERNAME', passwordVariable: 'MINATO_DATABASE_PASSWORD')
+          string(credentialsId: 'minato-db-username', variable: 'MINATO_DATABASE_USERNAME'),
+          string(credentialsId: 'minato-db-password', variable: 'MINATO_DATABASE_PASSWORD')
         ]) {
-          echo "[BB] withCredentials acquired: pg-minato"
+          echo "[BB] withCredentials acquired: minato-db-username/password"
           withEnv(["DB_HOST=${DB_HOST}"]) {
             echo "[BB] withEnv set DB_HOST=${DB_HOST}"
             sh '''#!/usr/bin/env bash
@@ -118,7 +119,10 @@ pipeline {
       steps {
         withCredentials([
           sshUserPrivateKey(credentialsId: 'minato-ssh', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER'),
-          usernamePassword(credentialsId: 'pg-minato', usernameVariable: 'MINATO_DATABASE_USERNAME', passwordVariable: 'MINATO_DATABASE_PASSWORD'),
+          // use the same DB creds as above (secret text)
+          string(credentialsId: 'minato-db-username', variable: 'MINATO_DATABASE_USERNAME'),
+          string(credentialsId: 'minato-db-password', variable: 'MINATO_DATABASE_PASSWORD'),
+          // optional DB host override from Jenkins creds (kept if you already created it)
           string(credentialsId: 'db-host',               variable: 'DB_HOST'),
           string(credentialsId: 'rails-secret-key-base', variable: 'SECRET_KEY_BASE'),
           string(credentialsId: 'rails-master-key',      variable: 'RAILS_MASTER_KEY')
@@ -152,9 +156,9 @@ pipeline {
           steps {
             sh '''#!/usr/bin/env bash
               set -euxo pipefail
-              echo "[VERIFY] Waiting for API health at http://'${API_SERVER}':3000/api/health…"
+              echo "[VERIFY] Waiting for API health at http://${API_SERVER}:3000/api/health…"
               ATTEMPTS=30
-              until curl -fsSL http://'${API_SERVER}':3000/api/health | grep -q '"status":"ok"'; do
+              until curl -fsSL "http://${API_SERVER}:3000/api/health" | grep -q '"status":"ok"'; do
                 ((ATTEMPTS--))
                 if [ $ATTEMPTS -le 0 ]; then
                   echo '[ERROR] API health check failed'
@@ -189,4 +193,3 @@ pipeline {
     }
   }
 }
-// This Jenkinsfile is designed to build and deploy the Minato backend application.
