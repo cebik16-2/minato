@@ -62,7 +62,7 @@ rsync -e "$RSYNC_SSH" -avz --delete \
   && echo "[DEPLOY] ✅ Backend uploaded." \
   || { echo "[DEPLOY] ❌ Backend upload failed."; exit 1; }
 
-# ===== 5) Install gems, maybe run DB tasks, precompile on remote =====
+# ===== 5) Install gems, run DB tasks, precompile on remote =====
 echo "[DEPLOY] Installing gems, DB tasks (conditional), and precompiling assets..."
 "${SSH_CMD[@]}" "${API_USER}@${API_SERVER}" \
   DB_HOST="${DB_HOST}" \
@@ -127,7 +127,7 @@ fi
 # Make lockfile Linux-friendly (no-op if already set)
 bundle lock --add-platform x86_64-linux || true
 
-# Local bundler config
+# Local bundler config (avoid deprecated --path)
 bundle config set --local path 'vendor/bundle'
 bundle config set --local without 'development test'
 bundle config set --local deployment 'true'
@@ -138,34 +138,44 @@ bundle install --jobs=4 --retry=3
 # ----- DB work (conditional) -----
 export PGPASSWORD="${MINATO_DATABASE_PASSWORD}"
 
-# Queue database (only if not skipped)
+# Queue DB ensure + migrate (non‑destructive)
 if [ "${SKIP_MIGRATIONS}" = "1" ] || [ "${SKIP_QUEUE_MIGRATIONS}" = "1" ]; then
-  echo "[REMOTE] Skipping queue DB creation/migrations (SKIP_MIGRATIONS=${SKIP_MIGRATIONS}, SKIP_QUEUE_MIGRATIONS=${SKIP_QUEUE_MIGRATIONS})."
+  echo "[REMOTE] Skipping queue DB migrations (SKIP_MIGRATIONS=${SKIP_MIGRATIONS}, SKIP_QUEUE_MIGRATIONS=${SKIP_QUEUE_MIGRATIONS})."
 else
   if command -v psql >/dev/null 2>&1; then
-    psql -U "${MINATO_DATABASE_USERNAME}" -h "${DB_HOST}" -d postgres \
-      -tc "SELECT 1 FROM pg_database WHERE datname='minato_queue_production'" | grep -q 1 || \
-    psql -U "${MINATO_DATABASE_USERNAME}" -h "${DB_HOST}" -d postgres \
-      -c "CREATE DATABASE minato_queue_production OWNER ${MINATO_DATABASE_USERNAME};" || true
-    # If you have rake tasks like db:schema:load:queue / db:migrate:queue, call them here
-    # (left out intentionally to avoid the AR config error you saw)
+    if ! psql -U "${MINATO_DATABASE_USERNAME}" -h "${DB_HOST}" -d postgres -tc \
+         "SELECT 1 FROM pg_database WHERE datname='minato_queue_production'" | grep -q 1; then
+      echo "[REMOTE] Creating queue DB 'minato_queue_production'…"
+      psql -U "${MINATO_DATABASE_USERNAME}" -h "${DB_HOST}" -d postgres \
+        -c "CREATE DATABASE minato_queue_production OWNER ${MINATO_DATABASE_USERNAME};" || true
+    fi
   else
     echo "[REMOTE][WARN] psql not available; cannot ensure queue DB exists."
   fi
-fi
 
-# Primary app DB
-if [ "${SKIP_MIGRATIONS}" = "1" ]; then
-  echo "[REMOTE] SKIP_MIGRATIONS=1 — skipping db:prepare / migrations."
-else
-  echo "[REMOTE] Running db:prepare…"
+  # Run only the queue DB migrations (requires database.yml migrations_paths: db/queue_migrate)
+  echo "[REMOTE] Running db:migrate:queue…"
   RAILS_ENV=production \
   DB_HOST="${DB_HOST}" \
   MINATO_DATABASE_USERNAME="${MINATO_DATABASE_USERNAME}" \
   MINATO_DATABASE_PASSWORD="${MINATO_DATABASE_PASSWORD}" \
   SECRET_KEY_BASE="${SECRET_KEY_BASE}" \
   RAILS_MASTER_KEY="${RAILS_MASTER_KEY}" \
-  bundle exec rails db:prepare
+  bundle exec rails db:migrate:queue
+fi
+
+# Primary app DB (app migrations only)
+if [ "${SKIP_MIGRATIONS}" = "1" ]; then
+  echo "[REMOTE] SKIP_MIGRATIONS=1 — skipping primary migrations."
+else
+  echo "[REMOTE] Running db:migrate:primary…"
+  RAILS_ENV=production \
+  DB_HOST="${DB_HOST}" \
+  MINATO_DATABASE_USERNAME="${MINATO_DATABASE_USERNAME}" \
+  MINATO_DATABASE_PASSWORD="${MINATO_DATABASE_PASSWORD}" \
+  SECRET_KEY_BASE="${SECRET_KEY_BASE}" \
+  RAILS_MASTER_KEY="${RAILS_MASTER_KEY}" \
+  bundle exec rails db:migrate:primary
 fi
 
 # ----- Assets -----

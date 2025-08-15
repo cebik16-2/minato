@@ -8,12 +8,26 @@ default: &default
   port: <%= ENV.fetch("DB_PORT", 5432) %>
 
 development:
-  <<: *default
-  database: minato_development
+  primary:
+    <<: *default
+    database: minato_development
+    migrations_paths: db/migrate
+
+  queue:
+    <<: *default
+    database: minato_queue_development
+    migrations_paths: db/queue_migrate
 
 test:
-  <<: *default
-  database: minato_test
+  primary:
+    <<: *default
+    database: minato_test
+    migrations_paths: db/migrate
+
+  queue:
+    <<: *default
+    database: minato_queue_test
+    migrations_paths: db/queue_migrate
 
 production:
   primary: &primary_production
@@ -22,7 +36,9 @@ production:
     host: <%= ENV.fetch("DB_HOST", "192.168.0.200") %>
     username: <%= ENV["MINATO_DATABASE_USERNAME"] %>
     password: <%= ENV["MINATO_DATABASE_PASSWORD"] %>
+    migrations_paths: db/migrate
 
   queue:
     <<: *primary_production
     database: minato_queue_production
+    migrations_paths: db/queue_migrate
