@@ -11,6 +11,10 @@ BACKEND_DIR="/var/www/minato-backend"
 SERVICE_NAME="${SERVICE_NAME:-minato-backend}"
 RUBY_VERSION="${RUBY_VERSION:-3.2.2}"
 
+# Skip flags (default off)
+SKIP_MIGRATIONS="${SKIP_MIGRATIONS:-0}"            # skips primary + queue DB migrations
+SKIP_QUEUE_MIGRATIONS="${SKIP_QUEUE_MIGRATIONS:-0}" # skips only queue DB work
+
 # ===== Required env from Jenkins withCredentials =====
 : "${DB_HOST:?DB_HOST is not set}"
 : "${MINATO_DATABASE_USERNAME:?MINATO_DATABASE_USERNAME is not set}"
@@ -21,10 +25,9 @@ RAILS_MASTER_KEY="${RAILS_MASTER_KEY:-}"
 
 echo "[DEPLOY] Target host: ${API_SERVER}"
 echo "[DEPLOY] DB host: ${DB_HOST}  DB user: ${MINATO_DATABASE_USERNAME}"
+echo "[DEPLOY] SKIP_MIGRATIONS=${SKIP_MIGRATIONS}  SKIP_QUEUE_MIGRATIONS=${SKIP_QUEUE_MIGRATIONS}"
 
 # ===== SSH options =====
-# If the Jenkins step started ssh-agent and added a key, we don't need -i.
-# You can still pass SSH_OPTIONS from the Jenkinsfile if you want (-o StrictHostKeyChecking=no etc).
 RSYNC_SSH="ssh ${SSH_OPTIONS:-}"
 SSH_CMD=(ssh)
 [ -n "${SSH_OPTIONS:-}" ] && SSH_CMD=(ssh ${SSH_OPTIONS})
@@ -59,8 +62,8 @@ rsync -e "$RSYNC_SSH" -avz --delete \
   && echo "[DEPLOY] ✅ Backend uploaded." \
   || { echo "[DEPLOY] ❌ Backend upload failed."; exit 1; }
 
-# ===== 5) Install gems, migrate, precompile on remote =====
-echo "[DEPLOY] Installing gems, migrating DB, and precompiling assets..."
+# ===== 5) Install gems, maybe run DB tasks, precompile on remote =====
+echo "[DEPLOY] Installing gems, DB tasks (conditional), and precompiling assets..."
 "${SSH_CMD[@]}" "${API_USER}@${API_SERVER}" \
   DB_HOST="${DB_HOST}" \
   MINATO_DATABASE_USERNAME="${MINATO_DATABASE_USERNAME}" \
@@ -70,19 +73,19 @@ echo "[DEPLOY] Installing gems, migrating DB, and precompiling assets..."
   RUBY_VERSION="${RUBY_VERSION}" \
   BACKEND_DIR="${BACKEND_DIR}" \
   SERVICE_NAME="${SERVICE_NAME}" \
+  SKIP_MIGRATIONS="${SKIP_MIGRATIONS}" \
+  SKIP_QUEUE_MIGRATIONS="${SKIP_QUEUE_MIGRATIONS}" \
   'bash -s' <<'EOF'
 set -euo pipefail
 
-# 0) Tooling sanity
+# ----- helpers -----
 need() { command -v "$1" >/dev/null 2>&1 || { echo "[ERROR] '$1' not found"; exit 1; }; }
 
-# rbenv + ruby
+# ----- tooling sanity -----
 export PATH="$HOME/.rbenv/bin:$HOME/.rbenv/shims:$PATH"
 need bash
 need sh
 need rsync
-need git || true
-need curl || true
 need ruby || true
 if ! command -v rbenv >/dev/null 2>&1; then
   echo "[ERROR] rbenv not found on remote host"
@@ -90,21 +93,22 @@ if ! command -v rbenv >/dev/null 2>&1; then
 fi
 eval "$(rbenv init - bash)"
 
-# psql is required to run manual DB cmds
-if ! command -v psql >/dev/null 2>&1; then
-  if command -v sudo >/dev/null 2>&1 && command -v apt-get >/dev/null 2>&1; then
-    echo "[REMOTE] Installing postgresql-client…"
-    sudo apt-get update -y
-    sudo apt-get install -y postgresql-client
-  else
-    echo "[ERROR] psql not found and cannot auto-install"
-    exit 1
+# psql (optional; only needed if we touch DBs)
+if [ "${SKIP_MIGRATIONS}" != "1" ] || [ "${SKIP_QUEUE_MIGRATIONS}" != "1" ]; then
+  if ! command -v psql >/dev/null 2>&1; then
+    if command -v sudo >/dev/null 2>&1 && command -v apt-get >/dev/null 2>&1; then
+      echo "[REMOTE] Installing postgresql-client…"
+      sudo apt-get update -y
+      sudo apt-get install -y postgresql-client
+    else
+      echo "[WARN] psql not found and cannot auto-install; continuing (DB steps may be skipped)"
+    fi
   fi
 fi
 
 cd "${BACKEND_DIR}"
 
-# Use the requested Ruby for this app
+# Use the requested Ruby
 rbenv local "${RUBY_VERSION}" || true
 rbenv rehash
 echo "[REMOTE] Ruby:    $(ruby -v)"
@@ -115,7 +119,7 @@ echo "[REMOTE] CWD:     $(pwd)"
 LOCK_BUNDLER="$(awk '/BUNDLED WITH/{getline; gsub(/^[ \t]+/,""); print; exit}' Gemfile.lock || true)"
 CURR_BUNDLER="$(bundle -v 2>/dev/null | awk '{print $3}' || true)"
 if [ -n "${LOCK_BUNDLER:-}" ] && [ "${LOCK_BUNDLER}" != "${CURR_BUNDLER}" ]; then
-  echo "[REMOTE] Installing Bundler ${LOCK_BUNDLER} to match lockfile…"
+  echo "[REMOTE] Installing Bundler ${LOCK_BUNDLER}…"
   gem install "bundler:${LOCK_BUNDLER}" -N
   rbenv rehash
 fi
@@ -131,24 +135,40 @@ bundle config set --local deployment 'true'
 echo "[REMOTE] bundle install…"
 bundle install --jobs=4 --retry=3
 
-# Ensure queue DB exists (optional; safe if you keep it)
+# ----- DB work (conditional) -----
 export PGPASSWORD="${MINATO_DATABASE_PASSWORD}"
-psql -U "${MINATO_DATABASE_USERNAME}" -h "${DB_HOST}" -d postgres \
-  -tc "SELECT 1 FROM pg_database WHERE datname='minato_queue_production'" | grep -q 1 || \
-psql -U "${MINATO_DATABASE_USERNAME}" -h "${DB_HOST}" -d postgres \
-  -c "CREATE DATABASE minato_queue_production OWNER ${MINATO_DATABASE_USERNAME};" || true
 
-# Migrate app DB (db:prepare will create + migrate if needed)
-echo "[REMOTE] Running db:prepare…"
-RAILS_ENV=production \
-DB_HOST="${DB_HOST}" \
-MINATO_DATABASE_USERNAME="${MINATO_DATABASE_USERNAME}" \
-MINATO_DATABASE_PASSWORD="${MINATO_DATABASE_PASSWORD}" \
-SECRET_KEY_BASE="${SECRET_KEY_BASE}" \
-RAILS_MASTER_KEY="${RAILS_MASTER_KEY}" \
-bundle exec rails db:prepare
+# Queue database (only if not skipped)
+if [ "${SKIP_MIGRATIONS}" = "1" ] || [ "${SKIP_QUEUE_MIGRATIONS}" = "1" ]; then
+  echo "[REMOTE] Skipping queue DB creation/migrations (SKIP_MIGRATIONS=${SKIP_MIGRATIONS}, SKIP_QUEUE_MIGRATIONS=${SKIP_QUEUE_MIGRATIONS})."
+else
+  if command -v psql >/dev/null 2>&1; then
+    psql -U "${MINATO_DATABASE_USERNAME}" -h "${DB_HOST}" -d postgres \
+      -tc "SELECT 1 FROM pg_database WHERE datname='minato_queue_production'" | grep -q 1 || \
+    psql -U "${MINATO_DATABASE_USERNAME}" -h "${DB_HOST}" -d postgres \
+      -c "CREATE DATABASE minato_queue_production OWNER ${MINATO_DATABASE_USERNAME};" || true
+    # If you have rake tasks like db:schema:load:queue / db:migrate:queue, call them here
+    # (left out intentionally to avoid the AR config error you saw)
+  else
+    echo "[REMOTE][WARN] psql not available; cannot ensure queue DB exists."
+  fi
+fi
 
-# Precompile assets (Rails-side; safe if app has minimal assets)
+# Primary app DB
+if [ "${SKIP_MIGRATIONS}" = "1" ]; then
+  echo "[REMOTE] SKIP_MIGRATIONS=1 — skipping db:prepare / migrations."
+else
+  echo "[REMOTE] Running db:prepare…"
+  RAILS_ENV=production \
+  DB_HOST="${DB_HOST}" \
+  MINATO_DATABASE_USERNAME="${MINATO_DATABASE_USERNAME}" \
+  MINATO_DATABASE_PASSWORD="${MINATO_DATABASE_PASSWORD}" \
+  SECRET_KEY_BASE="${SECRET_KEY_BASE}" \
+  RAILS_MASTER_KEY="${RAILS_MASTER_KEY}" \
+  bundle exec rails db:prepare
+fi
+
+# ----- Assets -----
 echo "[REMOTE] Precompiling assets…"
 RAILS_ENV=production \
 DB_HOST="${DB_HOST}" \
@@ -158,7 +178,7 @@ SECRET_KEY_BASE="${SECRET_KEY_BASE}" \
 RAILS_MASTER_KEY="${RAILS_MASTER_KEY}" \
 bundle exec rails assets:precompile
 
-# Restart backend service
+# ----- Restart service -----
 echo "[REMOTE] Restarting ${SERVICE_NAME}.service…"
 if command -v sudo >/dev/null 2>&1; then
   sudo systemctl restart "${SERVICE_NAME}"
