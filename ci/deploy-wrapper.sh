@@ -179,6 +179,16 @@ else
   echo "[DEPLOY] nginx not installed; skipping reload."
 fi
 
+# ===== 7) Post-deploy health check =====
+echo "[DEPLOY] Running post-deploy health check..."
+if "${SSH_CMD[@]}" "${API_USER}@${API_SERVER}" "curl -fsSL http://localhost:3000/api/health | grep -q '\"status\":\"ok\"'"; then
+  echo "[DEPLOY] ✅ Backend health check passed."
+else
+  echo "[DEPLOY] ❌ Backend health check failed!"
+  exit 1
+fi
+
+# ===== 8) Final status message =====
 echo "[DEPLOY] ✅ Deployment completed!"
 echo "[DEPLOY] Frontend:     http://${API_SERVER}/"
 echo "[DEPLOY] Backend API:  http://${API_SERVER}:3000/api/v1/"

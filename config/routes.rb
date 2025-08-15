@@ -4,33 +4,39 @@ Rails.application.routes.draw do
     confirmations: 'users/confirmations'
   }
 
-  # 👤 User and product nesting
-  resources :users, only: [:index, :show] do
-    resources :products
-  end
-
-  # 💖 Favorites API
-  resources :favorites, only: [:index, :create, :destroy]
-
-  # 🌆 Cities and categories
-  resources :cities, only: [:index]
-  resources :categories, only: [:index]
-
-  # 📦 Products with file detach route
-  resources :products do
-    member do
-      delete "detach_file/:file_id", to: "products#detach_file", as: "detach_file"
+  # API namespace
+  namespace :api do
+    # 👤 User and product nesting
+    resources :users, only: [:index, :show] do
+      resources :products
     end
-  end
 
-  # 📋 Listings route
-  resources :listings, only: [:index, :show]
+    # 💖 Favorites API
+    resources :favorites, only: [:index, :create, :destroy]
+
+    # 🌆 Cities and categories
+    resources :cities, only: [:index]
+    resources :categories, only: [:index]
+
+    # 📦 Products with file detach route
+    resources :products do
+      member do
+        delete "detach_file/:file_id", to: "products#detach_file", as: "detach_file"
+      end
+    end
+
+    # 📋 Listings route
+    resources :listings, only: [:index, :show]
+
+    # 🧪 Health check endpoint
+    get "health" => "rails/health#show", as: :api_health
+  end
 
   # 🏠 Welcome page & root
   get "welcome/index"
   root "welcome#index"
 
-  # 🧪 Health check endpoint
+  # 🧪 Global health check endpoint (non-namespaced)
   get "up" => "rails/health#show", as: :rails_health_check
 
   # 🔧 PWA endpoints (uncomment if you use them)
