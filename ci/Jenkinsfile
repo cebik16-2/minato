@@ -68,14 +68,35 @@ pipeline {
         stage('Deploy to API Server') {
             steps {
                 withCredentials([
-                string(credentialsId: 'DB_HOST', variable: 'DB_HOST'),
-                usernamePassword(credentialsId: 'MINATO_DB_CREDS', usernameVariable: 'MINATO_DATABASE_USERNAME', passwordVariable: 'MINATO_DATABASE_PASSWORD'),
-                string(credentialsId: 'MINATO_SECRET_KEY_BASE', variable: 'SECRET_KEY_BASE')
+                sshUserPrivateKey(credentialsId: 'minato-ssh', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER'),
+                usernamePassword(credentialsId: 'pg-minato', usernameVariable: 'MINATO_DATABASE_USERNAME', passwordVariable: 'MINATO_DATABASE_PASSWORD'),
+                string(credentialsId: 'db-host', variable: 'DB_HOST'),
+                string(credentialsId: 'rails-secret-key-base', variable: 'SECRET_KEY_BASE')
                 ]) {
-                sh 'bash ci/deploy-wrapper.sh production'
+                sh '''#!/usr/bin/env bash
+                    set -euo pipefail
+
+                    # Hardening & visibility
+                    chmod 600 "$SSH_KEY"
+
+                    # Avoid Groovy interpolation; use env vars in the shell only
+                    export SSH_OPTIONS="-i $SSH_KEY -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+
+                    echo "[CI] Running deploy-wrapper..."
+                    # Mask the DB password in logs while still showing commands (-x)
+                    set -x
+                    DB_HOST="$DB_HOST" \
+                    MINATO_DATABASE_USERNAME="$MINATO_DATABASE_USERNAME" \
+                    MINATO_DATABASE_PASSWORD="$MINATO_DATABASE_PASSWORD" \
+                    SECRET_KEY_BASE="$SECRET_KEY_BASE" \
+                    SSH_OPTIONS="$SSH_OPTIONS" \
+                    bash -x ci/deploy/deploy-wrapper.sh 2>&1 | sed -E "s/${MINATO_DATABASE_PASSWORD//\//\\/}/****/g"
+                    set +x
+                '''
                 }
             }
         }
+
 
         stage('Post-Deploy Verification') {
             parallel {
