@@ -8,6 +8,11 @@ echo "[backend] Preparing Ruby ${RUBY_VERSION} for backend build…"
 # 0) Clean leaking env that can break bundler
 unset GEM_HOME GEM_PATH RUBYOPT BUNDLE_PATH BUNDLE_WITHOUT BUNDLE_GEMFILE || true
 
+# --- Keep bundler config & gems OUT of the repo (CI-only paths)
+# This prevents .bundle/config from being rsynced to the server.
+export BUNDLE_APP_CONFIG="${WORKSPACE:-$PWD}/.ci_bundler"
+export CI_BUNDLE_PATH="${WORKSPACE:-$PWD}/.vendor/bundle"
+
 # 1) Activate rbenv & Ruby
 if [ -x "$HOME/.rbenv/bin/rbenv" ]; then
   export RBENV_ROOT="$HOME/.rbenv"
@@ -65,8 +70,9 @@ echo "[backend] Bundler: $($BUNDLE_CMD -v)"
 # 4) Make lockfile Linux-friendly if created on macOS/Windows
 $BUNDLE_CMD lock --add-platform x86_64-linux || true
 
-# 5) Install gems into workspace (not user home)
-export BUNDLE_PATH="${WORKSPACE:-$PWD}/.bundle/vendor"
+# 5) Install gems into CI workspace (not into repo or $HOME)
+mkdir -p "${BUNDLE_APP_CONFIG}" "${CI_BUNDLE_PATH}"
+export BUNDLE_PATH="${CI_BUNDLE_PATH}"
 export BUNDLE_WITHOUT="development:test"
 $BUNDLE_CMD config set path "$BUNDLE_PATH"
 $BUNDLE_CMD config set without "$BUNDLE_WITHOUT"
@@ -76,8 +82,8 @@ echo "[backend] bundle install…"
 $BUNDLE_CMD install --jobs=4 --retry=3
 
 # 6) Skip any DB or asset work in CI
-echo "[backend] ✅ Gems installed."
-echo "[backend] ✅ Skipping assets:precompile & migrations in CI — these run in deploy step."
+echo "[backend] ✅ Gems installed (CI-only path: ${CI_BUNDLE_PATH})."
+echo "[backend] ✅ Skipping assets:precompile & migrations in CI — these run in deploy."
 echo "[backend] ✅ Ruby environment ready for backend build."
 echo "[backend] Current working directory: $(pwd)"
 echo "[backend] Ruby version: $(ruby -v)"

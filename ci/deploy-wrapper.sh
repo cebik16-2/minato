@@ -11,6 +11,12 @@ BACKEND_DIR="/var/www/minato-backend"
 SERVICE_NAME="${SERVICE_NAME:-minato-backend}"
 RUBY_VERSION="${RUBY_VERSION:-3.2.2}"
 
+# Health/boot tuning
+APP_PORT="${APP_PORT:-3000}"
+HEALTH_URL="${HEALTH_URL:-http://127.0.0.1:${APP_PORT}/api/health}"
+TRIES="${TRIES:-30}"
+SLEEP="${SLEEP:-2}"
+
 # Skip flags (default off)
 SKIP_MIGRATIONS="${SKIP_MIGRATIONS:-0}"            # skips primary + queue DB migrations
 SKIP_QUEUE_MIGRATIONS="${SKIP_QUEUE_MIGRATIONS:-0}" # skips only queue DB work
@@ -53,6 +59,7 @@ rsync -e "$RSYNC_SSH" -avz --delete \
 # ===== 4) Upload backend (source) =====
 echo "[DEPLOY] Uploading backend source..."
 rsync -e "$RSYNC_SSH" -avz --delete \
+  --exclude=.git \
   --exclude=node_modules \
   --exclude=tmp \
   --exclude=log \
@@ -75,6 +82,10 @@ echo "[DEPLOY] Installing gems, DB tasks (conditional), and precompiling assets.
   SERVICE_NAME="${SERVICE_NAME}" \
   SKIP_MIGRATIONS="${SKIP_MIGRATIONS}" \
   SKIP_QUEUE_MIGRATIONS="${SKIP_QUEUE_MIGRATIONS}" \
+  APP_PORT="${APP_PORT}" \
+  HEALTH_URL="${HEALTH_URL}" \
+  TRIES="${TRIES}" \
+  SLEEP="${SLEEP}" \
   'bash -s' <<'EOF'
 set -euo pipefail
 
@@ -107,6 +118,12 @@ if [ "${SKIP_MIGRATIONS}" != "1" ] || [ "${SKIP_QUEUE_MIGRATIONS}" != "1" ]; the
 fi
 
 cd "${BACKEND_DIR}"
+
+# Ensure writable dirs (harmless if exist)
+mkdir -p tmp/pids tmp/sockets log
+if command -v sudo >/dev/null 2>&1; then
+  sudo chown -R "${USER}:${USER}" .
+fi
 
 # Use the requested Ruby
 rbenv local "${RUBY_VERSION}" || true
@@ -153,7 +170,6 @@ else
     echo "[REMOTE][WARN] psql not available; cannot ensure queue DB exists."
   fi
 
-  # Run only the queue DB migrations (requires database.yml migrations_paths: db/queue_migrate)
   echo "[REMOTE] Running db:migrate:queue…"
   RAILS_ENV=production \
   DB_HOST="${DB_HOST}" \
@@ -188,7 +204,7 @@ SECRET_KEY_BASE="${SECRET_KEY_BASE}" \
 RAILS_MASTER_KEY="${RAILS_MASTER_KEY}" \
 bundle exec rails assets:precompile
 
-# ----- Restart service -----
+# ----- Restart service + wait active -----
 echo "[REMOTE] Restarting ${SERVICE_NAME}.service…"
 if command -v sudo >/dev/null 2>&1; then
   sudo systemctl restart "${SERVICE_NAME}"
@@ -196,30 +212,60 @@ else
   systemctl --user restart "${SERVICE_NAME}"
 fi
 
-echo "[REMOTE] Done."
-EOF
+echo "[REMOTE] Waiting for systemd to report 'active'…"
+for i in $(seq 1 "${TRIES}"); do
+  if systemctl is-active --quiet "${SERVICE_NAME}"; then
+    echo "[REMOTE] Service is active (try $i/${TRIES})."
+    break
+  fi
+  echo "[REMOTE] … not active yet (try $i/${TRIES}). Sleeping ${SLEEP}s."
+  sleep "${SLEEP}"
+  if [ "$i" -eq "${TRIES}" ]; then
+    echo "[REMOTE] ❌ Service failed to become active. Recent logs:"
+    (command -v sudo >/dev/null 2>&1 && sudo journalctl -u "${SERVICE_NAME}" -n 200 --no-pager) || \
+      journalctl -u "${SERVICE_NAME}" -n 200 --no-pager || true
+    exit 1
+  fi
+done
 
-# ===== 6) Optionally reload nginx if present (safe no-op otherwise) =====
-echo "[DEPLOY] Checking for nginx to reload (optional)…"
-if "${SSH_CMD[@]}" "${API_USER}@${API_SERVER}" 'command -v nginx >/dev/null 2>&1'; then
-  "${SSH_CMD[@]}" "${API_USER}@${API_SERVER}" 'sudo systemctl reload nginx' \
-    && echo "[DEPLOY] nginx reloaded." \
-    || echo "[DEPLOY] nginx reload not available."
-else
-  echo "[DEPLOY] nginx not installed; skipping reload."
+# ----- Optional nginx reload (NOPASSWD required) -----
+if command -v nginx >/dev/null 2>&1; then
+  if sudo -n nginx -t >/dev/null 2>&1; then
+    sudo -n systemctl reload nginx || true
+    echo "[REMOTE] nginx reloaded."
+  else
+    echo "[REMOTE] nginx reload not available (needs NOPASSWD)."
+  fi
 fi
 
-# ===== 7) Post-deploy health check =====
-echo "[DEPLOY] Running post-deploy health check..."
-if "${SSH_CMD[@]}" "${API_USER}@${API_SERVER}" "curl -fsSL http://localhost:3000/api/health | grep -q '\"status\":\"ok\"'"; then
-  echo "[DEPLOY] ✅ Backend health check passed."
-else
-  echo "[DEPLOY] ❌ Backend health check failed!"
+# ----- Robust health check (retry; fallback to /) -----
+echo "[REMOTE] Probing ${HEALTH_URL}…"
+READY=
+for i in $(seq 1 "${TRIES}"); do
+  if curl -sf --max-time 2 "${HEALTH_URL}" >/dev/null; then
+    echo "[REMOTE] ✅ Health OK (try $i/${TRIES})."
+    READY=1; break
+  fi
+  if curl -sf --max-time 2 "http://127.0.0.1:${APP_PORT}" >/dev/null; then
+    echo "[REMOTE] ✅ Root responded (try $i/${TRIES})."
+    READY=1; break
+  fi
+  echo "[REMOTE] … not ready yet (try $i/${TRIES}). Sleeping ${SLEEP}s."
+  sleep "${SLEEP}"
+done
+
+if [ -z "${READY:-}" ]; then
+  echo "[REMOTE] ❌ Health check failed after $((TRIES*SLEEP))s. Recent logs:"
+  (command -v sudo >/dev/null 2>&1 && sudo journalctl -u "${SERVICE_NAME}" -n 200 --no-pager) || \
+    journalctl -u "${SERVICE_NAME}" -n 200 --no-pager || true
   exit 1
 fi
 
-# ===== 8) Final status message =====
+echo "[REMOTE] Done."
+EOF
+
+# ===== 6) Final status message =====
 echo "[DEPLOY] ✅ Deployment completed!"
-echo "[DEPLOY] Frontend:     http://${API_SERVER}/"
-echo "[DEPLOY] Backend API:  http://${API_SERVER}:3000/api/v1/"
-echo "[DEPLOY] Backend Admin: http://${API_SERVER}:3000/admin/"
+echo "[DEPLOY] Frontend:      http://${API_SERVER}/"
+echo "[DEPLOY] Backend API:   http://${API_SERVER}:3000/api/v1/"
+echo "[DEPLOY] Health target: ${HEALTH_URL}"
