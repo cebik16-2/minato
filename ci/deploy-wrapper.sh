@@ -47,9 +47,22 @@ fi
 
 # 3️⃣ Ensure queue DB exists, install gems & run migrations
 echo "[DEPLOY] Preparing database and installing gems..."
-ssh ${API_USER}@${API_SERVER} bash -s <<EOF
+ssh ${API_USER}@${API_SERVER} bash -s <<'EOF'
     set -euo pipefail
-    export PATH=\$HOME/.rubies/ruby-6/bin:\$PATH
+
+    # Load rbenv and force Ruby 3.2.2
+    export PATH="$HOME/.rbenv/bin:$HOME/.rbenv/shims:$PATH"
+    eval "$(rbenv init - bash)"
+    cd /var/www/minato-backend
+    rbenv local 3.2.2
+    rbenv rehash
+
+    # Fail if wrong Ruby version
+    if [[ "$(ruby -e 'print RUBY_VERSION')" != "3.2.2" ]]; then
+        echo "[ERROR] Ruby version mismatch: $(ruby -v)"
+        exit 1
+    fi
+
     export DB_HOST='${DB_HOST}'
     export MINATO_DATABASE_USERNAME='${MINATO_DATABASE_USERNAME}'
     export MINATO_DATABASE_PASSWORD='${MINATO_DATABASE_PASSWORD}'
@@ -64,10 +77,10 @@ ssh ${API_USER}@${API_SERVER} bash -s <<EOF
         psql -U \${MINATO_DATABASE_USERNAME} -h \${DB_HOST} -d postgres \
             -c "CREATE DATABASE minato_queue_production OWNER \${MINATO_DATABASE_USERNAME};"
 
-    cd ${BACKEND_DIR}
-
-    # Install correct gems for Ruby 3.0.6
-    bundle install --deployment --without development test
+    # Install correct gems for Ruby 3.2.2
+    bundle config set --local path vendor/bundle
+    bundle config set --local without 'development test'
+    bundle install --jobs=4 --retry=3
 
     # Run migrations
     bundle exec rake db:migrate RAILS_ENV=production
@@ -75,16 +88,28 @@ EOF
 
 # 4️⃣ Precompile assets
 echo "[DEPLOY] Precompiling backend assets..."
-ssh ${API_USER}@${API_SERVER} bash -s <<EOF
+ssh ${API_USER}@${API_SERVER} bash -s <<'EOF'
     set -euo pipefail
-    export PATH=\$HOME/.rubies/ruby-3.0.6/bin:\$PATH
+
+    # Load rbenv and force Ruby 3.2.2
+    export PATH="$HOME/.rbenv/bin:$HOME/.rbenv/shims:$PATH"
+    eval "$(rbenv init - bash)"
+    cd /var/www/minato-backend
+    rbenv local 3.2.2
+    rbenv rehash
+
+    if [[ "$(ruby -e 'print RUBY_VERSION')" != "3.2.2" ]]; then
+        echo "[ERROR] Ruby version mismatch: $(ruby -v)"
+        exit 1
+    fi
+
     export DB_HOST='${DB_HOST}'
     export MINATO_DATABASE_USERNAME='${MINATO_DATABASE_USERNAME}'
     export MINATO_DATABASE_PASSWORD='${MINATO_DATABASE_PASSWORD}'
 
-    cd ${BACKEND_DIR}
     bundle exec rails assets:precompile RAILS_ENV=production
 EOF
+
 
 # 5️⃣ Restart services
 echo "[DEPLOY] Restarting services..."
