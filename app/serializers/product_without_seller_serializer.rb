@@ -1,4 +1,4 @@
-class ProductWithoutUserSerializer < ActiveModel::Serializer
+class ProductWithoutSellerSerializer < ActiveModel::Serializer
   attributes :id, :title, :price, :description, :category_id, :category_name, :user_id, :sku, :product_type
   belongs_to :category
   has_many :files, serializer: FileAttachmentSerializer

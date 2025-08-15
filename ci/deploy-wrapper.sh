@@ -27,8 +27,8 @@ fi
 
 echo "[DEPLOY] Uploading frontend build..."
 rsync -avz --delete ./client/dist/spa/ "${API_USER}@${API_SERVER}:${FRONTEND_DIR}" \
-  && echo "[DEPLOY] ✅ Frontend uploaded successfully." \
-  || { echo "[DEPLOY] ❌ Frontend upload failed."; exit 1; }
+  && echo "[DEPLOY] Frontend uploaded successfully." \
+  || { echo "[DEPLOY] Frontend upload failed."; exit 1; }
 
 # 2) Upload backend
 echo "[DEPLOY] Uploading backend..."
@@ -37,8 +37,8 @@ rsync -avz --delete \
   --exclude=tmp \
   --exclude=log \
   ./ "${API_USER}@${API_SERVER}:${BACKEND_DIR}" \
-  && echo "[DEPLOY] ✅ Backend uploaded successfully." \
-  || { echo "[DEPLOY] ❌ Backend upload failed."; exit 1; }
+  && echo "[DEPLOY] Backend uploaded successfully." \
+  || { echo "[DEPLOY] Backend upload failed."; exit 1; }
 
 # 3) Install gems & run migrations (Ruby 3.2.2 via rbenv) + ensure queue DB
 echo "[DEPLOY] Preparing database and installing gems..."
@@ -119,12 +119,12 @@ EOF
 # 5) Restart services
 echo "[DEPLOY] Restarting services..."
 ssh -o LogLevel=ERROR "${API_USER}@${API_SERVER}" "sudo systemctl restart minato-backend" \
-  || { echo "[DEPLOY] ❌ Failed to restart backend."; exit 1; }
+  || { echo "[DEPLOY] Failed to restart backend."; exit 1; }
 
 # For the frontend (static under Nginx), reload Nginx:
 ssh -o LogLevel=ERROR "${API_USER}@${API_SERVER}" "sudo systemctl reload nginx" \
-  || echo "[DEPLOY] ⚠️ Nginx reload failed (check if Nginx manages the frontend)."
+  || echo "[DEPLOY]  Nginx reload failed (check if Nginx manages the frontend)."
 
-echo "[DEPLOY] ✅ Deployment completed successfully!"
+echo "[DEPLOY]  Deployment completed successfully!"
 echo "[DEPLOY] Frontend: http://${API_SERVER}/"
 echo "[DEPLOY] Backend API: http://${API_SERVER}/api/v1/"
