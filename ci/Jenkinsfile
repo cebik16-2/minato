@@ -1,140 +1,150 @@
 pipeline {
-    agent { label 'minato-ci' }
+  agent { label 'minato-ci' }
+  options {
+    timestamps()
+    ansiColor('xterm')
+  }
 
-    environment {
-        NVM_DIR       = "/home/minato/.nvm"
-        DEPLOY_SCRIPT = "ci/deploy/deploy-wrapper.sh"   // <- uses the variable consistently
-        BUILD_DIR     = "/opt/jenkins/Minato-packaging"
-        NODE_VERSION  = "18.20.2"
-        RUBY_VERSION  = "3.2.2"
+  environment {
+    NVM_DIR       = "/home/minato/.nvm"
+    DEPLOY_SCRIPT = "ci/deploy/deploy-wrapper.sh"
+    BUILD_DIR     = "/opt/jenkins/Minato-packaging"
+    NODE_VERSION  = "18.20.2"
+    RUBY_VERSION  = "3.2.2"
 
-        DB_HOST = "192.168.0.200"
-        // DO NOT resolve secrets here; do it inside withCredentials
+    // infra defaults (can be overridden in Jenkins job vars)
+    API_SERVER    = "minato-api"
+    SERVICE_NAME  = "minato-backend"
+    DB_HOST       = "192.168.0.200"
+    // DO NOT put secrets here
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        // shallow clone is fine; remove 'depth' if you need tags/changelog
+        git branch: 'feature/quasar-spa',
+            url: 'git@github.com:cebik16-2/minato.git'
+      }
     }
 
-    stages {
-        stage('Checkout') {
-            steps {
-                git branch: 'feature/quasar-spa',
-                    url: 'git@github.com:cebik16-2/minato.git'
-            }
-        }
+    stage('Prepare Build Directory') {
+      steps {
+        sh "bash ci/steps/prepare_build.sh"
+      }
+    }
 
-        stage('Prepare Build Directory') {
-            steps {
-                sh "bash ci/steps/prepare_build.sh"
-            }
-        }
+    stage('Verify Node.js') {
+      steps {
+        sh "bash ci/steps/verify_node.sh ${NODE_VERSION}"
+      }
+    }
 
-        stage('Verify Node.js') {
-            steps {
-                sh "bash ci/steps/verify_node.sh ${NODE_VERSION}"
-            }
-        }
+    stage('Verify Ruby') {
+      steps {
+        sh "bash ci/steps/verify_ruby.sh ${RUBY_VERSION}"
+      }
+    }
 
-        stage('Verify Ruby') {
-            steps {
-                sh "bash ci/steps/verify_ruby.sh ${RUBY_VERSION}"
-            }
+    stage('Build Frontend') {
+      steps {
+        withEnv(['VITE_API_URL=http://minato-api:3000']) {
+          sh '''#!/usr/bin/env bash
+          set -euo pipefail
+          cd client
+          npm ci
+          npm run build
+          '''
         }
+      }
+    }
 
-        stage('Build Frontend') {
-            steps {
-                withEnv([
-                    'VITE_API_URL=http://minato-api:3000'
-                ]) {
-                    sh '''#!/usr/bin/env bash
-                    set -euo pipefail
-                    cd client
-                    npm install
-                    npm run build
-                    '''
-                }
-            }
-        }
-
-        stage('Build Backend') {
-            steps {
-                withCredentials([
-                usernamePassword(credentialsId: 'pg-minato', usernameVariable: 'MINATO_DATABASE_USERNAME', passwordVariable: 'MINATO_DATABASE_PASSWORD')
-                ]) {
-                withEnv(['DB_HOST=192.168.0.200']) {
-                    sh """#!/usr/bin/env bash
+    stage('Build Backend') {
+      steps {
+        withCredentials([
+          usernamePassword(credentialsId: 'pg-minato', usernameVariable: 'MINATO_DATABASE_USERNAME', passwordVariable: 'MINATO_DATABASE_PASSWORD')
+        ]) {
+          withEnv(['DB_HOST=192.168.0.200']) {
+            sh """#!/usr/bin/env bash
             set -euo pipefail
             echo "[INFO] Starting backend build (Ruby ${RUBY_VERSION})"
             export DB_HOST MINATO_DATABASE_USERNAME MINATO_DATABASE_PASSWORD
             bash ci/steps/build_backend.sh ${RUBY_VERSION}
             """
-                }
-                }
-            }
+          }
         }
+      }
+    }
 
+    stage('Deploy to API Server') {
+      steps {
+        withCredentials([
+          sshUserPrivateKey(credentialsId: 'minato-ssh', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER'),
+          usernamePassword(credentialsId: 'pg-minato', usernameVariable: 'MINATO_DATABASE_USERNAME', passwordVariable: 'MINATO_DATABASE_PASSWORD'),
+          string(credentialsId: 'db-host',               variable: 'DB_HOST'),
+          string(credentialsId: 'rails-secret-key-base', variable: 'SECRET_KEY_BASE'),
+          // add this in Jenkins > Credentials if you use credentials.yml.enc
+          string(credentialsId: 'rails-master-key',      variable: 'RAILS_MASTER_KEY')
+        ]) {
+          sh '''#!/usr/bin/env bash
+          set -euo pipefail
 
-        stage('Deploy to API Server') {
-            steps {
-                withCredentials([
-                sshUserPrivateKey(credentialsId: 'minato-ssh', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER'),
-                usernamePassword(credentialsId: 'pg-minato', usernameVariable: 'MINATO_DATABASE_USERNAME', passwordVariable: 'MINATO_DATABASE_PASSWORD'),
-                string(credentialsId: 'db-host', variable: 'DB_HOST'),
-                string(credentialsId: 'rails-secret-key-base', variable: 'SECRET_KEY_BASE')
-                ]) {
-                sh '''#!/usr/bin/env bash
+          # ssh key for rsync/ssh used by the deploy script
+          eval "$(ssh-agent -s)" >/dev/null
+          chmod 600 "$SSH_KEY"
+          ssh-add "$SSH_KEY" >/dev/null
+
+          # optionally relax host key checking for CI
+          export SSH_OPTIONS="-o StrictHostKeyChecking=no"
+
+          # pass env to script without echoing secrets
+          export API_SERVER SERVICE_NAME RUBY_VERSION
+          export DB_HOST MINATO_DATABASE_USERNAME MINATO_DATABASE_PASSWORD SECRET_KEY_BASE RAILS_MASTER_KEY
+
+          echo "[CI] Running deploy wrapper…"
+          bash ${DEPLOY_SCRIPT}
+          '''
+        }
+      }
+    }
+
+    stage('Post-Deploy Verification') {
+      parallel {
+        stage('Check API Health') {
+          steps {
+            sh '''#!/usr/bin/env bash
             set -euo pipefail
-
-            # ssh key for rsync/ssh used by the deploy script
-            eval "$(ssh-agent -s)" >/dev/null
-            chmod 600 "$SSH_KEY"
-            ssh-add "$SSH_KEY" >/dev/null
-
-            # pass env to script without echoing values
-            export DB_HOST MINATO_DATABASE_USERNAME MINATO_DATABASE_PASSWORD SECRET_KEY_BASE
-
-            echo "[CI] Running deploy wrapper..."
-            bash ci/deploy/deploy-wrapper.sh
+            echo "[VERIFY] Checking API health…"
+            curl -sf http://minato-api:3000/health >/dev/null || {
+              echo '[ERROR] API health check failed'
+              exit 1
+            }
+            echo "[VERIFY] API is healthy."
             '''
-                }
+          }
+        }
+        stage('Check Frontend') {
+          steps {
+            sh '''#!/usr/bin/env bash
+            set -euo pipefail
+            echo "[VERIFY] Checking frontend…"
+            curl -sf http://minato.stevebytesnest.com >/dev/null || {
+              echo '[ERROR] Frontend check failed'
+              exit 1
             }
+            echo "[VERIFY] Frontend is reachable."
+            '''
+          }
         }
-
-
-        stage('Post-Deploy Verification') {
-            parallel {
-                stage('Check API Health') {
-                    steps {
-                        sh '''#!/usr/bin/env bash
-                        set -euo pipefail
-                        echo "[VERIFY] Checking API health..."
-                        curl -sf http://minato-api:3000/health >/dev/null || {
-                          echo '[ERROR] API health check failed'
-                          exit 1
-                        }
-                        echo "[VERIFY] API is healthy."
-                        '''
-                    }
-                }
-                stage('Check Frontend') {
-                    steps {
-                        sh '''#!/usr/bin/env bash
-                        set -euo pipefail
-                        echo "[VERIFY] Checking frontend..."
-                        curl -sf http://minato.stevebytesnest.com >/dev/null || {
-                          echo '[ERROR] Frontend check failed'
-                          exit 1
-                        }
-                        echo "[VERIFY] Frontend is reachable."
-                        '''
-                    }
-                }
-            }
-        }
+      }
     }
+  }
 
-    post {
-        failure {
-            echo "[ROLLBACK] Deployment failed. Add rollback steps here if needed."
-        }
+  post {
+    failure {
+      echo "[ROLLBACK] Deployment failed. Add rollback steps here if needed."
     }
+  }
 }
-// This Jenkinsfile is designed to build and deploy the Minato application.
-// It includes stages for checking out the code, preparing the build environment,
+// This Jenkinsfile is designed for a CI/CD pipeline that builds and deploys the Minato application.
+// It includes stages for verifying dependencies, building the frontend and backend,

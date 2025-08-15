@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 TARGET=${1:-}
@@ -8,35 +8,42 @@ API_USER="${API_USER:-minato}"
 
 FRONTEND_DIR="/var/www/minato-frontend"
 BACKEND_DIR="/var/www/minato-backend"
+SERVICE_NAME="${SERVICE_NAME:-minato-backend}"
+RUBY_VERSION="${RUBY_VERSION:-3.2.2}"
 
 # ===== Required env from Jenkins withCredentials =====
 : "${DB_HOST:?DB_HOST is not set}"
 : "${MINATO_DATABASE_USERNAME:?MINATO_DATABASE_USERNAME is not set}"
 : "${MINATO_DATABASE_PASSWORD:?MINATO_DATABASE_PASSWORD is not set}"
 : "${SECRET_KEY_BASE:?SECRET_KEY_BASE is not set}"
+# Optional but recommended when using credentials.yml.enc
+RAILS_MASTER_KEY="${RAILS_MASTER_KEY:-}"
 
 echo "[DEPLOY] Target host: ${API_SERVER}"
 echo "[DEPLOY] DB host: ${DB_HOST}  DB user: ${MINATO_DATABASE_USERNAME}"
 
-# ===== SSH options (optional) =====
-# If Jenkins provides an SSH key, pass it in via SSH_OPTIONS (e.g. "-i $SSH_KEY -o StrictHostKeyChecking=no")
+# ===== SSH options =====
+# If the Jenkins step started ssh-agent and added a key, we don't need -i.
+# You can still pass SSH_OPTIONS from the Jenkinsfile if you want (-o StrictHostKeyChecking=no etc).
 RSYNC_SSH="ssh ${SSH_OPTIONS:-}"
 SSH_CMD=(ssh)
 [ -n "${SSH_OPTIONS:-}" ] && SSH_CMD=(ssh ${SSH_OPTIONS})
 
 # ===== 1) Verify frontend build exists =====
-if [ ! -d "./client/dist/spa" ]; then
-  echo "[ERROR] Frontend build directory ./client/dist/spa not found"
+if [ ! -d "./client/dist/spa" ] || [ ! -f "./client/dist/spa/index.html" ]; then
+  echo "[ERROR] Frontend build directory ./client/dist/spa missing (or index.html not found)"
   exit 1
 fi
 
-# ===== 2) Ensure remote directories exist =====
+# ===== 2) Ensure remote directories exist & ownership =====
 echo "[DEPLOY] Ensuring remote directories exist..."
 "${SSH_CMD[@]}" "${API_USER}@${API_SERVER}" "mkdir -p '${FRONTEND_DIR}' '${BACKEND_DIR}'"
 
 # ===== 3) Upload frontend (built SPA) =====
 echo "[DEPLOY] Uploading frontend build..."
-rsync -e "$RSYNC_SSH" -avz --delete ./client/dist/spa/ "${API_USER}@${API_SERVER}:${FRONTEND_DIR}" \
+rsync -e "$RSYNC_SSH" -avz --delete \
+  --chown="${API_USER}:${API_USER}" \
+  ./client/dist/spa/ "${API_USER}@${API_SERVER}:${FRONTEND_DIR}/" \
   && echo "[DEPLOY] ✅ Frontend uploaded." \
   || { echo "[DEPLOY] ❌ Frontend upload failed."; exit 1; }
 
@@ -47,91 +54,123 @@ rsync -e "$RSYNC_SSH" -avz --delete \
   --exclude=tmp \
   --exclude=log \
   --exclude=vendor/bundle \
-  ./ "${API_USER}@${API_SERVER}:${BACKEND_DIR}" \
+  --chown="${API_USER}:${API_USER}" \
+  ./ "${API_USER}@${API_SERVER}:${BACKEND_DIR}/" \
   && echo "[DEPLOY] ✅ Backend uploaded." \
   || { echo "[DEPLOY] ❌ Backend upload failed."; exit 1; }
 
-# ===== 5) Install gems, migrate, precompile (Ruby 3.2.2 via rbenv) =====
+# ===== 5) Install gems, migrate, precompile on remote =====
 echo "[DEPLOY] Installing gems, migrating DB, and precompiling assets..."
 "${SSH_CMD[@]}" "${API_USER}@${API_SERVER}" \
   DB_HOST="${DB_HOST}" \
   MINATO_DATABASE_USERNAME="${MINATO_DATABASE_USERNAME}" \
   MINATO_DATABASE_PASSWORD="${MINATO_DATABASE_PASSWORD}" \
   SECRET_KEY_BASE="${SECRET_KEY_BASE}" \
+  RAILS_MASTER_KEY="${RAILS_MASTER_KEY}" \
+  RUBY_VERSION="${RUBY_VERSION}" \
+  BACKEND_DIR="${BACKEND_DIR}" \
+  SERVICE_NAME="${SERVICE_NAME}" \
   'bash -s' <<'EOF'
 set -euo pipefail
 
-# Make rbenv available
+# 0) Tooling sanity
+need() { command -v "$1" >/dev/null 2>&1 || { echo "[ERROR] '$1' not found"; exit 1; }; }
+
+# rbenv + ruby
 export PATH="$HOME/.rbenv/bin:$HOME/.rbenv/shims:$PATH"
+need bash
+need sh
+need rsync
+need git || true
+need curl || true
+need ruby || true
 if ! command -v rbenv >/dev/null 2>&1; then
   echo "[ERROR] rbenv not found on remote host"
   exit 1
 fi
 eval "$(rbenv init - bash)"
 
-cd /var/www/minato-backend
+# psql is required to run manual DB cmds
+if ! command -v psql >/dev/null 2>&1; then
+  if command -v sudo >/dev/null 2>&1 && command -v apt-get >/dev/null 2>&1; then
+    echo "[REMOTE] Installing postgresql-client…"
+    sudo apt-get update -y
+    sudo apt-get install -y postgresql-client
+  else
+    echo "[ERROR] psql not found and cannot auto-install"
+    exit 1
+  fi
+fi
 
-# Pin Ruby to 3.2.2 for this app
-rbenv local 3.2.2 || true
+cd "${BACKEND_DIR}"
+
+# Use the requested Ruby for this app
+rbenv local "${RUBY_VERSION}" || true
 rbenv rehash
+echo "[REMOTE] Ruby:    $(ruby -v)"
+echo "[REMOTE] Bundler: $(bundle -v || echo 'not installed')"
+echo "[REMOTE] CWD:     $(pwd)"
 
-echo "[REMOTE] Ruby:     $(ruby -v)"
-echo "[REMOTE] Bundler:  $(bundle -v || echo 'not installed')"
-echo "[REMOTE] CWD:      $(pwd)"
+# Match Bundler to Gemfile.lock (if pinned)
+LOCK_BUNDLER="$(awk '/BUNDLED WITH/{getline; gsub(/^[ \t]+/,""); print; exit}' Gemfile.lock || true)"
+CURR_BUNDLER="$(bundle -v 2>/dev/null | awk '{print $3}' || true)"
+if [ -n "${LOCK_BUNDLER:-}" ] && [ "${LOCK_BUNDLER}" != "${CURR_BUNDLER}" ]; then
+  echo "[REMOTE] Installing Bundler ${LOCK_BUNDLER} to match lockfile…"
+  gem install "bundler:${LOCK_BUNDLER}" -N
+  rbenv rehash
+fi
 
-# Ensure queue DB (ignore if it exists)
+# Make lockfile Linux-friendly (no-op if already set)
+bundle lock --add-platform x86_64-linux || true
+
+# Local bundler config
+bundle config set --local path 'vendor/bundle'
+bundle config set --local without 'development test'
+bundle config set --local deployment 'true'
+
+echo "[REMOTE] bundle install…"
+bundle install --jobs=4 --retry=3
+
+# Ensure queue DB exists (optional; safe if you keep it)
 export PGPASSWORD="${MINATO_DATABASE_PASSWORD}"
 psql -U "${MINATO_DATABASE_USERNAME}" -h "${DB_HOST}" -d postgres \
   -tc "SELECT 1 FROM pg_database WHERE datname='minato_queue_production'" | grep -q 1 || \
 psql -U "${MINATO_DATABASE_USERNAME}" -h "${DB_HOST}" -d postgres \
   -c "CREATE DATABASE minato_queue_production OWNER ${MINATO_DATABASE_USERNAME};" || true
 
-# Local bundler config
-bundle config set --local path 'vendor/bundle'
-bundle config set --local without 'development test'
-
-# Match Bundler to Gemfile.lock
-LOCK_BUNDLER=$(awk '/BUNDLED WITH/{getline; gsub(/^[ \t]+/,""); print; exit}' Gemfile.lock || true)
-CURR_BUNDLER=$(bundle -v 2>/dev/null | awk "{print \$3}" || true)
-if [ -n "${LOCK_BUNDLER:-}" ] && [ "${LOCK_BUNDLER}" != "${CURR_BUNDLER}" ]; then
-  echo "[REMOTE] Installing Bundler ${LOCK_BUNDLER} to match Gemfile.lock..."
-  gem install bundler -v "${LOCK_BUNDLER}" --no-document
-fi
-
-# Install gems
-bundle install --jobs=4 --retry=3
-
-# Migrate
-RUBYOPT= \
+# Migrate app DB (db:prepare will create + migrate if needed)
+echo "[REMOTE] Running db:prepare…"
 RAILS_ENV=production \
 DB_HOST="${DB_HOST}" \
 MINATO_DATABASE_USERNAME="${MINATO_DATABASE_USERNAME}" \
 MINATO_DATABASE_PASSWORD="${MINATO_DATABASE_PASSWORD}" \
 SECRET_KEY_BASE="${SECRET_KEY_BASE}" \
-bundle exec rake db:migrate
+RAILS_MASTER_KEY="${RAILS_MASTER_KEY}" \
+bundle exec rails db:prepare
 
-# Precompile assets
-RUBYOPT= \
+# Precompile assets (Rails-side; safe if app has minimal assets)
+echo "[REMOTE] Precompiling assets…"
 RAILS_ENV=production \
 DB_HOST="${DB_HOST}" \
 MINATO_DATABASE_USERNAME="${MINATO_DATABASE_USERNAME}" \
 MINATO_DATABASE_PASSWORD="${MINATO_DATABASE_PASSWORD}" \
 SECRET_KEY_BASE="${SECRET_KEY_BASE}" \
+RAILS_MASTER_KEY="${RAILS_MASTER_KEY}" \
 bundle exec rails assets:precompile
 
 # Restart backend service
-echo "[REMOTE] Restarting minato-backend.service..."
+echo "[REMOTE] Restarting ${SERVICE_NAME}.service…"
 if command -v sudo >/dev/null 2>&1; then
-  sudo systemctl restart minato-backend
+  sudo systemctl restart "${SERVICE_NAME}"
 else
-  systemctl --user restart minato-backend
+  systemctl --user restart "${SERVICE_NAME}"
 fi
 
 echo "[REMOTE] Done."
 EOF
 
 # ===== 6) Optionally reload nginx if present (safe no-op otherwise) =====
-echo "[DEPLOY] Checking for nginx to reload (optional)..."
+echo "[DEPLOY] Checking for nginx to reload (optional)…"
 if "${SSH_CMD[@]}" "${API_USER}@${API_SERVER}" 'command -v nginx >/dev/null 2>&1'; then
   "${SSH_CMD[@]}" "${API_USER}@${API_SERVER}" 'sudo systemctl reload nginx' \
     && echo "[DEPLOY] nginx reloaded." \
@@ -143,3 +182,4 @@ fi
 echo "[DEPLOY] ✅ Deployment completed!"
 echo "[DEPLOY] Frontend:     http://${API_SERVER}/"
 echo "[DEPLOY] Backend API:  http://${API_SERVER}:3000/api/v1/"
+echo "[DEPLOY] Backend Admin: http://${API_SERVER}:3000/admin/"
