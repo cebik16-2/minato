@@ -4,18 +4,25 @@ set -euo pipefail
 EXPECTED_VERSION=$1
 echo "[INFO] Verifying Ruby environment for version ${EXPECTED_VERSION}..."
 
-# Load rbenv
-export PATH="$HOME/.rbenv/bin:$HOME/.rbenv/shims:$PATH"
+# 🔹 Ensure rbenv paths are loaded
+export RBENV_ROOT="$HOME/.rbenv"
+export PATH="$RBENV_ROOT/bin:$RBENV_ROOT/shims:$PATH"
+if ! command -v rbenv >/dev/null 2>&1; then
+    echo "[ERROR] rbenv not found at $RBENV_ROOT/bin. Is it installed on this agent?"
+    exit 1
+fi
 eval "$(rbenv init - bash)"
 
-# Switch to expected version
-rbenv shell "${EXPECTED_VERSION}" || {
-    echo "[ERROR] Ruby ${EXPECTED_VERSION} not installed. Installing..."
+# 🔹 Ensure version is installed
+if ! rbenv versions --bare | grep -qx "${EXPECTED_VERSION}"; then
+    echo "[INFO] Installing Ruby ${EXPECTED_VERSION}..."
     rbenv install -s "${EXPECTED_VERSION}"
-    rbenv shell "${EXPECTED_VERSION}"
-}
+fi
 
-# Verify version
+# 🔹 Switch to correct version
+rbenv shell "${EXPECTED_VERSION}"
+
+# 🔹 Verify version
 CURRENT_VERSION=$(ruby -e 'print RUBY_VERSION')
 if [[ "$CURRENT_VERSION" != ${EXPECTED_VERSION%.*}* ]]; then
     echo "[ERROR] Ruby version mismatch. Expected ${EXPECTED_VERSION%.*}x, got $(ruby -v)."
