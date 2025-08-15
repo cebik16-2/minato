@@ -59,21 +59,23 @@ pipeline {
     }
 
     stage('Build Backend') {
-      steps {
-        withCredentials([
-          usernamePassword(credentialsId: 'pg-minato', usernameVariable: 'MINATO_DATABASE_USERNAME', passwordVariable: 'MINATO_DATABASE_PASSWORD')
-        ]) {
-          withEnv(['DB_HOST=192.168.0.200']) {
-            sh """#!/usr/bin/env bash
-            set -euo pipefail
-            echo "[INFO] Starting backend build (Ruby ${RUBY_VERSION})"
-            export DB_HOST MINATO_DATABASE_USERNAME MINATO_DATABASE_PASSWORD
-            bash ci/steps/build_backend.sh ${RUBY_VERSION}
-            """
-          }
+        steps {
+            withCredentials([
+            usernamePassword(credentialsId: 'pg-minato', usernameVariable: 'MINATO_DATABASE_USERNAME', passwordVariable: 'MINATO_DATABASE_PASSWORD')
+            ]) {
+            withEnv(['DB_HOST=192.168.0.200']) {
+                sh '''#!/usr/bin/env bash
+                set -euxo pipefail
+                echo "[INFO] PWD: $(pwd)"
+                ls -l ci/steps/build_backend.sh || true
+                export DB_HOST MINATO_DATABASE_USERNAME MINATO_DATABASE_PASSWORD
+                bash -x ci/steps/build_backend.sh ${RUBY_VERSION}
+                '''
+                }
+            }
         }
-      }
     }
+
 
     stage('Deploy to API Server') {
       steps {

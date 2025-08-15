@@ -28,21 +28,22 @@ fi
 echo "[backend] Ruby:  $(ruby -v)"
 echo "[backend] gem:   $(gem -v)"
 
-# 2) System native deps (safe to re-run)
+# 2) System native deps (safe to re-run) — but skip if sudo can't run non-interactively
 if command -v apt-get >/dev/null 2>&1; then
-  echo "[backend] Installing native build deps if missing…"
-  if ! sudo apt-get update -y; then
-    echo "[WARN] apt-get update failed — likely due to a dead PPA. Continuing..."
-  fi
-  if ! sudo apt-get install -y build-essential libpq-dev pkg-config zlib1g-dev libssl-dev; then
-    echo "[WARN] Failed to install some native build packages — bundle install may fail if missing."
+  if command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+    echo "[backend] Installing native build deps if missing…"
+    sudo apt-get update -y || echo "[WARN] apt-get update had non-zero exit; continuing…"
+    sudo apt-get install -y build-essential libpq-dev pkg-config zlib1g-dev libssl-dev \
+      || echo "[WARN] Failed to install some native build packages — continuing…"
+  else
+    echo "[WARN] Skipping apt installs (no passwordless sudo)."
   fi
 fi
 
-# 3) Use Bundler version pinned in Gemfile.lock (no --user-install)
+# 3) Use Bundler version pinned in Gemfile.lock (strip CR to avoid '2.6.2\r')
 BUNDLER_VERSION=""
 if [ -f Gemfile.lock ]; then
-  BUNDLER_VERSION="$(awk '/BUNDLED WITH/{getline; gsub(/^[ \t]+/,""); print; exit}' Gemfile.lock || true)"
+  BUNDLER_VERSION="$(awk '/BUNDLED WITH/{getline; gsub(/^[ \t]+/,""); print; exit}' Gemfile.lock | tr -d '\r' || true)"
 fi
 
 if [ -n "${BUNDLER_VERSION}" ]; then
@@ -79,5 +80,4 @@ echo "[backend] ✅ Gems installed."
 echo "[backend] ✅ Skipping assets:precompile & migrations in CI — these run in deploy step."
 echo "[backend] ✅ Ruby environment ready for backend build."
 echo "[backend] Current working directory: $(pwd)"
-echo "[backend] Ruby: $(ruby -v)"
-echo "[backend] Bundler: $($BUNDLE_CMD -v)"
+echo "[backend] Ruby version: $(ruby -v)"
