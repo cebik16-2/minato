@@ -44,7 +44,7 @@ if [ ! -d "./client/dist/spa" ] || [ ! -f "./client/dist/spa/index.html" ]; then
   exit 1
 fi
 
-# ===== 2) Ensure remote directories exist & ownership =====
+# ===== 2) Ensure remote directories exist =====
 echo "[DEPLOY] Ensuring remote directories exist..."
 "${SSH_CMD[@]}" "${API_USER}@${API_SERVER}" "mkdir -p '${FRONTEND_DIR}' '${BACKEND_DIR}'"
 
@@ -94,36 +94,21 @@ need() { command -v "$1" >/dev/null 2>&1 || { echo "[ERROR] '$1' not found"; exi
 
 # ----- tooling sanity -----
 export PATH="$HOME/.rbenv/bin:$HOME/.rbenv/shims:$PATH"
-need bash
-need sh
-need rsync
-need ruby || true
-if ! command -v rbenv >/dev/null 2>&1; then
-  echo "[ERROR] rbenv not found on remote host"
-  exit 1
-fi
+need bash; need sh; need rsync
+command -v rbenv >/dev/null 2>&1 || { echo "[ERROR] rbenv not found on remote host"; exit 1; }
 eval "$(rbenv init - bash)"
 
-# psql (optional; only needed if we touch DBs)
-if [ "${SKIP_MIGRATIONS}" != "1" ] || [ "${SKIP_QUEUE_MIGRATIONS}" != "1" ]; then
-  if ! command -v psql >/dev/null 2>&1; then
-    if command -v sudo >/dev/null 2>&1 && command -v apt-get >/dev/null 2>&1; then
-      echo "[REMOTE] Installing postgresql-client…"
-      sudo apt-get update -y
-      sudo apt-get install -y postgresql-client
-    else
-      echo "[WARN] psql not found and cannot auto-install; continuing (DB steps may be skipped)"
-    fi
-  fi
+# Detect passwordless sudo availability (for restart/nginx only)
+if command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+  SUDO_OK=1
+else
+  SUDO_OK=0
 fi
 
 cd "${BACKEND_DIR}"
 
-# Ensure writable dirs (harmless if exist)
+# Ensure writable dirs (no sudo needed)
 mkdir -p tmp/pids tmp/sockets log
-if command -v sudo >/dev/null 2>&1; then
-  sudo chown -R "${USER}:${USER}" .
-fi
 
 # Use the requested Ruby
 rbenv local "${RUBY_VERSION}" || true
@@ -152,10 +137,10 @@ bundle config set --local deployment 'true'
 echo "[REMOTE] bundle install…"
 bundle install --jobs=4 --retry=3
 
-# ----- DB work (conditional) -----
+# ----- DB work (conditional; NO apt-get here) -----
 export PGPASSWORD="${MINATO_DATABASE_PASSWORD}"
 
-# Queue DB ensure + migrate (non‑destructive)
+# Queue DB ensure + migrate (non-destructive)
 if [ "${SKIP_MIGRATIONS}" = "1" ] || [ "${SKIP_QUEUE_MIGRATIONS}" = "1" ]; then
   echo "[REMOTE] Skipping queue DB migrations (SKIP_MIGRATIONS=${SKIP_MIGRATIONS}, SKIP_QUEUE_MIGRATIONS=${SKIP_QUEUE_MIGRATIONS})."
 else
@@ -204,34 +189,34 @@ SECRET_KEY_BASE="${SECRET_KEY_BASE}" \
 RAILS_MASTER_KEY="${RAILS_MASTER_KEY}" \
 bundle exec rails assets:precompile
 
-# ----- Restart service + wait active -----
+# ----- Restart service + wait active (sudo -n; exact paths) -----
 echo "[REMOTE] Restarting ${SERVICE_NAME}.service…"
-if command -v sudo >/dev/null 2>&1; then
-  sudo systemctl restart "${SERVICE_NAME}"
-else
+if [ "$SUDO_OK" = "1" ]; then
+  sudo -n /usr/bin/systemctl restart "${SERVICE_NAME}"
+elif systemctl --user status "${SERVICE_NAME}" >/dev/null 2>&1; then
   systemctl --user restart "${SERVICE_NAME}"
+else
+  echo "[REMOTE][ERROR] Need passwordless sudo for /usr/bin/systemctl restart ${SERVICE_NAME}"
+  exit 1
 fi
 
 echo "[REMOTE] Waiting for systemd to report 'active'…"
 for i in $(seq 1 "${TRIES}"); do
-  if systemctl is-active --quiet "${SERVICE_NAME}"; then
-    echo "[REMOTE] Service is active (try $i/${TRIES})."
-    break
-  fi
+  /usr/bin/systemctl is-active --quiet "${SERVICE_NAME}" && { echo "[REMOTE] Service is active (try $i/${TRIES})."; break; }
   echo "[REMOTE] … not active yet (try $i/${TRIES}). Sleeping ${SLEEP}s."
   sleep "${SLEEP}"
   if [ "$i" -eq "${TRIES}" ]; then
     echo "[REMOTE] ❌ Service failed to become active. Recent logs:"
-    (command -v sudo >/dev/null 2>&1 && sudo journalctl -u "${SERVICE_NAME}" -n 200 --no-pager) || \
-      journalctl -u "${SERVICE_NAME}" -n 200 --no-pager || true
+    ( [ "$SUDO_OK" = "1" ] && sudo -n /usr/bin/journalctl -u "${SERVICE_NAME}" -n 200 --no-pager ) || \
+      /usr/bin/journalctl -u "${SERVICE_NAME}" -n 200 --no-pager || true
     exit 1
   fi
 done
 
 # ----- Optional nginx reload (NOPASSWD required) -----
 if command -v nginx >/dev/null 2>&1; then
-  if sudo -n nginx -t >/dev/null 2>&1; then
-    sudo -n systemctl reload nginx || true
+  if [ "$SUDO_OK" = "1" ] && sudo -n /usr/sbin/nginx -t >/dev/null 2>&1; then
+    sudo -n /usr/bin/systemctl reload nginx || true
     echo "[REMOTE] nginx reloaded."
   else
     echo "[REMOTE] nginx reload not available (needs NOPASSWD)."
@@ -256,8 +241,8 @@ done
 
 if [ -z "${READY:-}" ]; then
   echo "[REMOTE] ❌ Health check failed after $((TRIES*SLEEP))s. Recent logs:"
-  (command -v sudo >/dev/null 2>&1 && sudo journalctl -u "${SERVICE_NAME}" -n 200 --no-pager) || \
-    journalctl -u "${SERVICE_NAME}" -n 200 --no-pager || true
+  ( [ "$SUDO_OK" = "1" ] && sudo -n /usr/bin/journalctl -u "${SERVICE_NAME}" -n 200 --no-pager ) || \
+    /usr/bin/journalctl -u "${SERVICE_NAME}" -n 200 --no-pager || true
   exit 1
 fi
 
