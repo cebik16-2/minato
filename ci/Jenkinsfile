@@ -56,46 +56,47 @@ pipeline {
         stage('Build Backend') {
             steps {
                 withCredentials([
-                    usernamePassword(credentialsId: 'pg-minato', usernameVariable: 'MINATO_DATABASE_USERNAME', passwordVariable: 'MINATO_DATABASE_PASSWORD')
+                usernamePassword(credentialsId: 'pg-minato', usernameVariable: 'MINATO_DATABASE_USERNAME', passwordVariable: 'MINATO_DATABASE_PASSWORD')
                 ]) {
-                    withEnv([
-                        'DB_HOST=192.168.0.200'
-                    ]) {
-                        sh '''#!/usr/bin/env bash
-                        set -euo pipefail
-                        export DB_HOST MINATO_DATABASE_USERNAME MINATO_DATABASE_PASSWORD
-                        bash ci/steps/build_backend.sh '"${RUBY_VERSION}"'
-                        '''
-                    }
+                withEnv(['DB_HOST=192.168.0.200']) {
+                    sh """#!/usr/bin/env bash
+            set -euo pipefail
+            echo "[INFO] Starting backend build (Ruby ${RUBY_VERSION})"
+            export DB_HOST MINATO_DATABASE_USERNAME MINATO_DATABASE_PASSWORD
+            bash ci/steps/build_backend.sh ${RUBY_VERSION}
+            """
+                }
                 }
             }
         }
+
 
         stage('Deploy to API Server') {
             steps {
                 withCredentials([
-                    sshUserPrivateKey(credentialsId: 'minato-ssh', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER'),
-                    usernamePassword(credentialsId: 'pg-minato', usernameVariable: 'MINATO_DATABASE_USERNAME', passwordVariable: 'MINATO_DATABASE_PASSWORD'),
-                    string(credentialsId: 'db-host', variable: 'DB_HOST'),
-                    string(credentialsId: 'rails-secret-key-base', variable: 'SECRET_KEY_BASE')
+                sshUserPrivateKey(credentialsId: 'minato-ssh', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER'),
+                usernamePassword(credentialsId: 'pg-minato', usernameVariable: 'MINATO_DATABASE_USERNAME', passwordVariable: 'MINATO_DATABASE_PASSWORD'),
+                string(credentialsId: 'db-host', variable: 'DB_HOST'),
+                string(credentialsId: 'rails-secret-key-base', variable: 'SECRET_KEY_BASE')
                 ]) {
-                    sh '''#!/usr/bin/env bash
-                    set -euo pipefail
+                sh '''#!/usr/bin/env bash
+            set -euo pipefail
 
-                    # Start an agent and add the provided key so ssh/rsync in the deploy script can use it
-                    eval "$(ssh-agent -s)" >/dev/null
-                    chmod 600 "$SSH_KEY"
-                    ssh-add "$SSH_KEY" >/dev/null
+            # ssh key for rsync/ssh used by the deploy script
+            eval "$(ssh-agent -s)" >/dev/null
+            chmod 600 "$SSH_KEY"
+            ssh-add "$SSH_KEY" >/dev/null
 
-                    # Pass env to the deploy wrapper without echoing secrets
-                    export DB_HOST MINATO_DATABASE_USERNAME MINATO_DATABASE_PASSWORD SECRET_KEY_BASE
+            # pass env to script without echoing values
+            export DB_HOST MINATO_DATABASE_USERNAME MINATO_DATABASE_PASSWORD SECRET_KEY_BASE
 
-                    echo "[CI] Running deploy wrapper: $DEPLOY_SCRIPT"
-                    bash "$DEPLOY_SCRIPT"
-                    '''
+            echo "[CI] Running deploy wrapper..."
+            bash ci/deploy/deploy-wrapper.sh
+            '''
                 }
             }
         }
+
 
         stage('Post-Deploy Verification') {
             parallel {
