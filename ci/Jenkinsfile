@@ -117,38 +117,33 @@ pipeline {
 
     stage('Deploy to API Server') {
       steps {
-        echo "[DEPLOY] ENTER stage Deploy to API Server"
-        withCredentials([
-          // SSH key you actually have (ID = Minato user’s UUID)
-          sshUserPrivateKey(credentialsId: 'd8240dfb-3e70-43b2-9d8c-172c8d6f8078', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER'),
-          // DB creds as separate secret-text vars
-          string(credentialsId: 'minato-db-username', variable: 'MINATO_DATABASE_USERNAME'),
-          string(credentialsId: 'minato-db-password', variable: 'MINATO_DATABASE_PASSWORD'),
-          // Rails SECRET_KEY_BASE you actually have
-          string(credentialsId: 'MINATO_SECRET_KEY_BASE', variable: 'SECRET_KEY_BASE')
-          // (No rails-master-key, no db-host — not present in your store)
-        ]) {
-          sh '''#!/usr/bin/env bash
-            set -euxo pipefail
+          echo "[DEPLOY] ENTER stage Deploy to API Server"
+          withCredentials([
+              sshUserPrivateKey(credentialsId: 'minato-api-deploy-key', keyFileVariable: 'SSH_KEY', usernameVariable: 'API_USER'),
+              string(credentialsId: 'minato-db-username', variable: 'MINATO_DATABASE_USERNAME'),
+              string(credentialsId: 'minato-db-password', variable: 'MINATO_DATABASE_PASSWORD'),
+              string(credentialsId: 'MINATO_SECRET_KEY_BASE', variable: 'SECRET_KEY_BASE')
+          ]) {
+              sh '''#!/usr/bin/env bash
+                set -euxo pipefail
 
-            echo "[DEPLOY] Using script: ${DEPLOY_SCRIPT}"
-            test -f "${DEPLOY_SCRIPT}"
+                echo "[DEPLOY] Using script: ${DEPLOY_SCRIPT}"
+                test -f "${DEPLOY_SCRIPT}"
 
-            eval "$(ssh-agent -s)" >/dev/null
-            chmod 600 "$SSH_KEY"
-            ssh-add "$SSH_KEY" >/dev/null
+                eval "$(ssh-agent -s)" >/dev/null
+                chmod 600 "$SSH_KEY"
+                ssh-add "$SSH_KEY" >/dev/null
 
-            export SSH_OPTIONS="-o StrictHostKeyChecking=no"
-            [ -n "${SSH_USER:-}" ] && export API_USER="${SSH_USER}"
+                export SSH_OPTIONS="-o StrictHostKeyChecking=no"
 
-            # Pass env to script without echoing secrets
-            export API_SERVER SERVICE_NAME RUBY_VERSION
-            export DB_HOST MINATO_DATABASE_USERNAME MINATO_DATABASE_PASSWORD SECRET_KEY_BASE
+                # Pass env to script without echoing secrets
+                export API_SERVER SERVICE_NAME RUBY_VERSION
+                export DB_HOST MINATO_DATABASE_USERNAME MINATO_DATABASE_PASSWORD SECRET_KEY_BASE
 
-            bash ${DEPLOY_SCRIPT}
-          '''
-        }
-      }
+                bash ${DEPLOY_SCRIPT}
+              '''
+            }
+        } 
     }
 
 
