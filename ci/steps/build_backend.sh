@@ -30,6 +30,7 @@ echo "[backend] gem:   $(gem -v)"
 
 # 2) System native deps (safe to re-run)
 if command -v apt-get >/dev/null 2>&1; then
+  echo "[backend] Installing native build deps if missing…"
   sudo apt-get update -y
   sudo apt-get install -y build-essential libpq-dev pkg-config zlib1g-dev libssl-dev
 fi
@@ -69,7 +70,8 @@ $BUNDLE_CMD config set deployment 'true'
 echo "[backend] bundle install…"
 $BUNDLE_CMD install --jobs=4 --retry=3
 
-# 6) Do NOT precompile assets or run migrations in CI
-#    That belongs on the target host where full env vars/credentials exist.
-echo "[backend] ✅ Gems installed. Skipping assets:precompile & DB work in CI."
+# 6) Skip any DB or asset work in CI
+echo "[backend] ✅ Gems installed."
+echo "[backend] ✅ Skipping assets:precompile & migrations in CI — these run in deploy step."
 echo "[backend] ✅ Ruby environment ready for backend build."
+echo "[backend] Current working directory: $(pwd)"
