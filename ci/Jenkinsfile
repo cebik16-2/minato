@@ -41,9 +41,18 @@ pipeline {
 
         stage('Build Frontend') {
             steps {
-                sh "bash ci/steps/build_frontend.sh ${NODE_VERSION}"
+                withEnv([
+                    'VITE_API_URL=http://minato-api:3000'
+                ]) {
+                    sh '''
+                        cd client
+                        npm install
+                        npm run build
+                    '''
+                }
             }
         }
+
 
         stage('Build Backend') {
             steps {
