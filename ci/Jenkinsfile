@@ -58,12 +58,13 @@ pipeline {
 
         stage('Deploy to API Server') {
             steps {
-                sh """
-                    export DB_HOST=${DB_HOST}
-                    export MINATO_DATABASE_USERNAME=${MINATO_DATABASE_USERNAME}
-                    export MINATO_DATABASE_PASSWORD=${MINATO_DATABASE_PASSWORD}
-                    bash ${DEPLOY_SCRIPT} production
-                """
+                withCredentials([
+                string(credentialsId: 'DB_HOST', variable: 'DB_HOST'),
+                usernamePassword(credentialsId: 'MINATO_DB_CREDS', usernameVariable: 'MINATO_DATABASE_USERNAME', passwordVariable: 'MINATO_DATABASE_PASSWORD'),
+                string(credentialsId: 'MINATO_SECRET_KEY_BASE', variable: 'SECRET_KEY_BASE')
+                ]) {
+                sh 'bash ci/deploy-wrapper.sh production'
+                }
             }
         }
 
