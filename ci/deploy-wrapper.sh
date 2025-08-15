@@ -191,39 +191,34 @@ bundle exec rails assets:precompile
 
 # ----- Restart service + wait active (sudo -n; exact paths) -----
 echo "[REMOTE] Restarting ${SERVICE_NAME}.service…"
-if [ "$SUDO_OK" = "1" ]; then
-  sudo -n /usr/bin/systemctl restart "${SERVICE_NAME}"
-elif systemctl --user status "${SERVICE_NAME}" >/dev/null 2>&1; then
-  systemctl --user restart "${SERVICE_NAME}"
-else
-  echo "[REMOTE][ERROR] Need passwordless sudo for /usr/bin/systemctl restart ${SERVICE_NAME}"
-  exit 1
-fi
+sudo -n /usr/bin/systemctl restart "${SERVICE_NAME}"
 
 echo "[REMOTE] Waiting for systemd to report 'active'…"
 for i in $(seq 1 "${TRIES}"); do
-  /usr/bin/systemctl is-active --quiet "${SERVICE_NAME}" && { echo "[REMOTE] Service is active (try $i/${TRIES})."; break; }
+  sudo -n /usr/bin/systemctl is-active --quiet "${SERVICE_NAME}" && {
+    echo "[REMOTE] Service is active (try $i/${TRIES})."
+    break
+  }
   echo "[REMOTE] … not active yet (try $i/${TRIES}). Sleeping ${SLEEP}s."
   sleep "${SLEEP}"
   if [ "$i" -eq "${TRIES}" ]; then
     echo "[REMOTE] ❌ Service failed to become active. Recent logs:"
-    ( [ "$SUDO_OK" = "1" ] && sudo -n /usr/bin/journalctl -u "${SERVICE_NAME}" -n 200 --no-pager ) || \
-      /usr/bin/journalctl -u "${SERVICE_NAME}" -n 200 --no-pager || true
+    sudo -n /usr/bin/journalctl -u "${SERVICE_NAME}" -n 200 --no-pager || true
     exit 1
   fi
 done
 
-# ----- Optional nginx reload (NOPASSWD required) -----
+# ----- Optional nginx reload -----
 if command -v nginx >/dev/null 2>&1; then
-  if [ "$SUDO_OK" = "1" ] && sudo -n /usr/sbin/nginx -t >/dev/null 2>&1; then
+  if sudo -n /usr/sbin/nginx -t >/dev/null 2>&1; then
     sudo -n /usr/bin/systemctl reload nginx || true
     echo "[REMOTE] nginx reloaded."
   else
-    echo "[REMOTE] nginx reload not available (needs NOPASSWD)."
+    echo "[REMOTE] nginx reload skipped (syntax check failed)."
   fi
 fi
 
-# ----- Robust health check (retry; fallback to /) -----
+# ----- Robust health check -----
 echo "[REMOTE] Probing ${HEALTH_URL}…"
 READY=
 for i in $(seq 1 "${TRIES}"); do
@@ -241,10 +236,10 @@ done
 
 if [ -z "${READY:-}" ]; then
   echo "[REMOTE] ❌ Health check failed after $((TRIES*SLEEP))s. Recent logs:"
-  ( [ "$SUDO_OK" = "1" ] && sudo -n /usr/bin/journalctl -u "${SERVICE_NAME}" -n 200 --no-pager ) || \
-    /usr/bin/journalctl -u "${SERVICE_NAME}" -n 200 --no-pager || true
+  sudo -n /usr/bin/journalctl -u "${SERVICE_NAME}" -n 200 --no-pager || true
   exit 1
 fi
+
 
 echo "[REMOTE] Done."
 EOF
