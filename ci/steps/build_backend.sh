@@ -31,8 +31,12 @@ echo "[backend] gem:   $(gem -v)"
 # 2) System native deps (safe to re-run)
 if command -v apt-get >/dev/null 2>&1; then
   echo "[backend] Installing native build deps if missing…"
-  sudo apt-get update -y
-  sudo apt-get install -y build-essential libpq-dev pkg-config zlib1g-dev libssl-dev
+  if ! sudo apt-get update -y; then
+    echo "[WARN] apt-get update failed — likely due to a dead PPA. Continuing..."
+  fi
+  if ! sudo apt-get install -y build-essential libpq-dev pkg-config zlib1g-dev libssl-dev; then
+    echo "[WARN] Failed to install some native build packages — bundle install may fail if missing."
+  fi
 fi
 
 # 3) Use Bundler version pinned in Gemfile.lock (no --user-install)
@@ -75,3 +79,5 @@ echo "[backend] ✅ Gems installed."
 echo "[backend] ✅ Skipping assets:precompile & migrations in CI — these run in deploy step."
 echo "[backend] ✅ Ruby environment ready for backend build."
 echo "[backend] Current working directory: $(pwd)"
+echo "[backend] Ruby: $(ruby -v)"
+echo "[backend] Bundler: $($BUNDLE_CMD -v)"
