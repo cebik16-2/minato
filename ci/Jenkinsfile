@@ -2,7 +2,6 @@ pipeline {
   agent { label 'minato-ci' }
   options {
     timestamps()
-    ansiColor('xterm')
   }
 
   environment {
