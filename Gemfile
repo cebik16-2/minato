@@ -19,6 +19,7 @@ gem "tzinfo-data", platforms: %i[windows jruby]
 gem "solid_cache", "0.4.0"
 gem "solid_queue", "0.6.0"
 gem "solid_cable"
+gem "rack-protection"
 
 gem "bootsnap", require: false
 gem "kamal", require: false
