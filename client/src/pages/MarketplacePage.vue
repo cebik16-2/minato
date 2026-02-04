@@ -50,6 +50,9 @@ import AddItemModal from 'src/components/modals/AddItemModal.vue'
 import { fetchProducts } from 'src/services/api/products/products'
 import { getFavorites, addFavorite, removeFavorite } from '../services/api/favorites/favoritesApi'
 import type { Product } from 'src/types'
+import banner1 from 'src/assets/banners/banner-1.webp'
+import banner2 from 'src/assets/banners/banner-2.webp'
+import banner3 from 'src/assets/banners/banner-3.webp'
 
 interface Favorite {
   id: number
@@ -61,9 +64,9 @@ interface Slide {
 }
 
 const slides: Slide[] = [
-  { image: '/assets/banner1.jpg' },
-  { image: '/assets/banner2.jpg' },
-  { image: '/assets/banner3.jpg' }
+  { image: banner1 },
+  { image: banner2 },
+  { image: banner3 }
 ]
 
 const products = ref<Product[]>([])
