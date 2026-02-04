@@ -1,6 +1,6 @@
 module Api
   class ProductsController < ApplicationController
-    before_action :authenticate_user!, only: %i[create update destroy detach_file]
+    before_action :authenticate_user!, only: %i[create update destroy detach_file my_products]
     before_action :set_product, only: %i[show edit update destroy detach_file]
 
     # Public marketplace index
@@ -12,6 +12,15 @@ module Api
         .per(params[:per_page] || 20)
 
       render json: products, each_serializer: ProductSerializer, meta: pagination_meta(products)
+    end
+
+    # Current user's products
+    def my_products
+      products = current_user.products
+        .includes(:seller, files_attachments: :blob)
+        .order(created_at: :desc)
+
+      render json: { products: products }, each_serializer: ProductSerializer
     end
 
     def show

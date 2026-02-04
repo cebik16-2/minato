@@ -64,10 +64,12 @@
   <script setup lang="ts">
   import { ref, onMounted } from 'vue'
   import { useRouter } from 'vue-router'
+  import { useQuasar } from 'quasar'
   import { api } from 'src/boot/axios'
   import { getCategories } from 'src/services/api/categories/categories'
   
   const router = useRouter()
+  const $q = useQuasar()
   
   const form = ref({
     title: '',
@@ -96,21 +98,32 @@
   
   const submitForm = async () => {
     try {
-      const payload = new FormData()
-      payload.append('product[title]', form.value.title)
-      payload.append('product[description]', form.value.description)
-      payload.append('product[price]', form.value.price.toString())
-      payload.append('product[category_id]', String(form.value.category_id))
+      const formData = new FormData()
+      
+      // Add product fields with 'product' as root key
+      formData.append('product[title]', form.value.title)
+      formData.append('product[description]', form.value.description)
+      formData.append('product[price]', form.value.price.toString())
+      formData.append('product[category_id]', String(form.value.category_id || ''))
   
+      // Add files
       form.value.files.forEach((file) => {
-        payload.append('product[files][]', file)
+        formData.append('product[files][]', file)
       })
-  
-      await api.post('/api/products', payload)
-  
+
+      await api.post('/api/products', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+
       successDialog.value = true
     } catch (err) {
       console.error('Failed to submit product:', err)
+      $q.notify({
+        type: 'negative',
+        message: 'Failed to create product. Please check your form and try again.'
+      })
     }
   }
   </script>

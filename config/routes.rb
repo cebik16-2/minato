@@ -23,6 +23,9 @@ Rails.application.routes.draw do
 
     # 📦 Products with file detach route
     resources :products do
+      collection do
+        get :my_products
+      end
       member do
         delete "detach_file/:file_id", to: "products#detach_file", as: "detach_file"
       end

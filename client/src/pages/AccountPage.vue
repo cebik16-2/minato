@@ -258,7 +258,9 @@ const loadUserListings = async () => {
   loadingListings.value = true
   try {
     const response = await getUserProducts()
-    userListings.value = response.data
+    // Handle response structure: API returns {products: []}
+    const listingsData = response.data?.products || response.data || []
+    userListings.value = Array.isArray(listingsData) ? listingsData : []
   } catch (error: unknown) {
     console.error('Failed to load listings:', error)
     $q.notify({

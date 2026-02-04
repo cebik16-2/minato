@@ -26,7 +26,7 @@ export const fetchProducts = async (
 export const getAllProducts = () => api.get('/api/products')
 
 // 👤 Get products of the currently logged-in user
-export const getUserProducts = () => api.get('/api/products')
+export const getUserProducts = () => api.get('/api/products/my_products')
 
 // ➕ Create a product for the current user
 export const createProduct = (product: object) =>
