@@ -73,8 +73,20 @@
           v-for="category in categories"
           :key="category.id"
           clickable
+          @click="selectCategory(category)"
+          :active="selectedCategoryId === category.id"
+          active-class="bg-blue-1"
         >
           <q-item-section>{{ category.name }}</q-item-section>
+        </q-item>
+        <q-separator class="q-my-md" v-if="categories.length > 0" />
+        <q-item
+          clickable
+          @click="clearCategory"
+          :active="selectedCategoryId === null"
+          active-class="bg-blue-1"
+        >
+          <q-item-section>All Categories</q-item-section>
         </q-item>
       </q-list>
     </q-drawer>
@@ -124,6 +136,18 @@ export default {
     const showCart = ref(false)
     const leftDrawerOpen = ref(true)
     const categories = ref<Category[]>([])
+    const selectedCategoryId = ref<number | null>(null)
+
+    const selectCategory = (category: Category) => {
+      selectedCategoryId.value = category.id
+      console.log(`📁 Selecting category: ${category.name} (id: ${category.id})`)
+      void router.push({ name: 'marketplace', query: { category: category.id } })
+    }
+
+    const clearCategory = () => {
+      selectedCategoryId.value = null
+      void router.push({ name: 'marketplace' })
+    }
 
     const openLoginModal = () => authStore.openLoginModal()
     const closeLoginModal = () => authStore.closeLoginModal()
@@ -167,7 +191,10 @@ export default {
       isAuthenticated,
       logout: authStore.logout,
       cartCount,
-      handleCartClose
+      handleCartClose,
+      selectCategory,
+      clearCategory,
+      selectedCategoryId
     }
   }
 }

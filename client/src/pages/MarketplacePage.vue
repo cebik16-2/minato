@@ -7,7 +7,7 @@
     <q-infinite-scroll
       @load="loadMore"
       :offset="100"
-      ref="infiniteScroll"
+      ref="infiniteScrollRef"
       :disable="!hasMore"
     >
       <ProductList
@@ -42,7 +42,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import BannerCarousel from 'src/components/sections/BannerCarousel.vue'
 import ProductList from 'src/components/sections/ProductList.vue'
 import QuickViewModal from 'src/components/modals/QuickViewModal.vue'
@@ -50,9 +51,11 @@ import AddItemModal from 'src/components/modals/AddItemModal.vue'
 import { fetchProducts } from 'src/services/api/products/products'
 import { getFavorites, addFavorite, removeFavorite } from '../services/api/favorites/favoritesApi'
 import type { Product } from 'src/types'
-import banner1 from 'src/assets/banners/banner-1.webp'
-import banner2 from 'src/assets/banners/banner-2.webp'
-import banner3 from 'src/assets/banners/banner-3.webp'
+import banner1 from '../assets/banners/banner-1.webp'
+import banner2 from '../assets/banners/banner-2.webp'
+import banner3 from '../assets/banners/banner-3.webp'
+
+const route = useRoute()
 
 interface Favorite {
   id: number
@@ -72,6 +75,7 @@ const slides: Slide[] = [
 const products = ref<Product[]>([])
 const page = ref(1)
 const hasMore = ref(true)
+const selectedCategoryId = ref<number | null>(null)
 
 const selectedItem = ref<Product | null>(null)
 const quickViewVisible = ref(false)
@@ -79,6 +83,7 @@ const showAddItem = ref(false)
 
 const favoritedProductIds = ref<number[]>([])
 const favoriteMap = ref<Record<number, number>>({})
+const infiniteScrollRef = ref()
 
 // 🧠 Load and group favorites
 const loadFavorites = async () => {
@@ -151,19 +156,33 @@ const viewItem = (item: Product) => {
 // ⬇️ Infinite Scroll Loader
 const loadMore = async (_index: number, done: (stop?: boolean) => void) => {
   try {
-    const res = await fetchProducts(page.value)
+    console.log(`📥 Loading products: page=${page.value}, categoryId=${selectedCategoryId.value}`)
+    const res = await fetchProducts(page.value, selectedCategoryId.value || undefined)
     
     // Handle response structure: API returns {data: {products: [], meta: {}}}
     const productsData = res.data?.products || []
     const meta = res.data?.meta
 
+    console.log(`📦 Loaded ${productsData.length} products, meta:`, meta)
+
+    if (page.value === 1) {
+      // First page: replace all products (clear and set)
+      products.value = productsData
+      console.log(`📦 Set products to ${productsData.length} items (page 1)`)
+    } else {
+      // Subsequent pages: append
+      console.log(`📦 Before push: products.value.length = ${products.value.length}`)
+      products.value.push(...productsData)
+      console.log(`📦 After push: products.value.length = ${products.value.length}`)
+    }
+
     if (!meta?.next_page || productsData.length === 0) {
       hasMore.value = false
+      console.log(`✋ Stopping infinite scroll (no more products)`)
       done(true)
       return
     }
 
-    products.value.push(...productsData)
     page.value++
   } catch (error) {
     console.error('Error loading products:', error)
@@ -178,5 +197,32 @@ const loadMore = async (_index: number, done: (stop?: boolean) => void) => {
 // 📦 On Page Load
 onMounted(() => {
   void loadFavorites()
+  // Check for category in query params
+  const categoryParam = route.query['category']
+  console.log(`📍 MarketplacePage mounted, initial route.query['category']:`, categoryParam)
+  if (categoryParam) {
+    selectedCategoryId.value = parseInt(categoryParam as string)
+  }
 })
+
+// 🔄 Watch for route changes (category filter)
+watch(
+  () => route.query['category'],
+  async (newCategory) => {
+    console.log(`� WATCH FIRED! Category query changed to:`, newCategory)
+    console.log(`�🔄 Category filter changed to: ${String(newCategory ?? '')}`)
+    // Reset pagination but DON'T clear products yet (loadMore will handle it)
+    page.value = 1
+    hasMore.value = true
+    if (newCategory) {
+      selectedCategoryId.value = parseInt(newCategory as string)
+    } else {
+      selectedCategoryId.value = null
+    }
+    // Load products directly for the new category
+    await loadMore(0, () => {
+      // callback resolved
+    })
+  }
+)
 </script>

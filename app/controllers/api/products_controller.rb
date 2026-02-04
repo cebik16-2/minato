@@ -8,6 +8,11 @@ module Api
       products = Product
         .includes(:seller, files_attachments: :blob)
         .order(created_at: :desc)
+
+      # Filter by category if provided
+      products = products.where(category_id: params[:category_id]) if params[:category_id].present?
+
+      products = products
         .page(params[:page])
         .per(params[:per_page] || 20)
 

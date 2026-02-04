@@ -43,6 +43,11 @@ export default defineComponent({
     }
   },
   emits: ['view-item', 'toggle-favorite'],
+  watch: {
+    products(newVal) {
+      console.log(`📋 ProductList received ${newVal.length} products:`, newVal)
+    }
+  },
   methods: {
     emitView(product: Product) {
       this.$emit('view-item', product)

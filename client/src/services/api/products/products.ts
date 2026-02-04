@@ -13,10 +13,11 @@ interface PaginationMeta {
 // 🆕 Paginated fetch for marketplace
 export const fetchProducts = async (
   page = 1,
+  categoryId?: number,
   perPage = 20
 ): Promise<{ data: { products: Product[]; meta: PaginationMeta } }> => {
   const response = await api.get('/api/products', {
-    params: { page, per_page: perPage }
+    params: { page, per_page: perPage, category_id: categoryId }
   })
 
   return response
