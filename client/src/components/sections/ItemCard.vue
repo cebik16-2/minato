@@ -27,7 +27,7 @@
     <!-- Product Info -->
     <q-card-section class="q-py-sm q-px-md" @click="$emit('view', item)">
       <div class="text-subtitle2 text-weight-medium ellipsis">{{ item.title }}</div>
-      <div class="text-primary text-bold q-mt-xs">€ {{ item.price?.toFixed(2) || 'N/A' }}</div>
+      <div class="text-primary text-bold q-mt-xs">€ {{ formatPrice(item.price) }}</div>
     </q-card-section>
   </q-card>
 </template>
@@ -51,7 +51,14 @@ export default {
   emits: ['view', 'toggle-favorite'],
   setup() {
     const placeholderImage = 'https://via.placeholder.com/300x200?text=No+Image'
-    return { placeholderImage }
+    
+    const formatPrice = (price: unknown): string => {
+      if (price === null || price === undefined) return 'N/A'
+      const num = typeof price === 'string' ? parseFloat(price) : (price as number)
+      return isNaN(num) ? 'N/A' : num.toFixed(2)
+    }
+    
+    return { placeholderImage, formatPrice }
   }
 }
 </script>

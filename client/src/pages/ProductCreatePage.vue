@@ -106,7 +106,7 @@
         payload.append('product[files][]', file)
       })
   
-      await api.post('/products', payload)
+      await api.post('/api/products', payload)
   
       successDialog.value = true
     } catch (err) {

@@ -6,9 +6,12 @@ Rails.application.routes.draw do
 
   # API namespace
   namespace :api do
-    # 👤 User and product nesting
+    # 👤 Users
     resources :users, only: [:index, :show] do
-      resources :products
+      collection do
+        get :current
+        put :current, to: 'users#update_current'
+      end
     end
 
     # 💖 Favorites API
@@ -16,7 +19,7 @@ Rails.application.routes.draw do
 
     # 🌆 Cities and categories
     resources :cities, only: [:index]
-    resources :categories, only: [:index]
+    resources :categories, only: [:index, :create, :update, :destroy]
 
     # 📦 Products with file detach route
     resources :products do

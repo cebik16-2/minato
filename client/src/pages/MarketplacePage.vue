@@ -149,14 +149,18 @@ const viewItem = (item: Product) => {
 const loadMore = async (_index: number, done: (stop?: boolean) => void) => {
   try {
     const res = await fetchProducts(page.value)
+    
+    // Handle response structure: API returns {data: {products: [], meta: {}}}
+    const productsData = res.data?.products || []
+    const meta = res.data?.meta
 
-    if (!res.meta?.next_page || res.data.length === 0) {
+    if (!meta?.next_page || productsData.length === 0) {
       hasMore.value = false
       done(true)
       return
     }
 
-    products.value.push(...res.data)
+    products.value.push(...productsData)
     page.value++
   } catch (error) {
     console.error('Error loading products:', error)

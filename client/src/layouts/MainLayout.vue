@@ -54,6 +54,12 @@
             class="q-ml-sm"
             @click="router.push('/products/new')"
           />
+          <q-btn 
+            flat 
+            icon="account_circle" 
+            class="q-ml-sm" 
+            @click="router.push('/account')"
+          />
           <q-btn flat icon="logout" class="q-ml-sm" @click="logout" />
         </template>
       </q-toolbar>
