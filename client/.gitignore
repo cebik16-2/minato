@@ -1,46 +1,33 @@
-# Logs
-logs/
-*.log
+.DS_Store
+.thumbs.db
+node_modules
+
+# Quasar core related directories
+.quasar
+/dist
+/quasar.config.*.temporary.compiled*
+
+# Cordova related directories and files
+/src-cordova/node_modules
+/src-cordova/platforms
+/src-cordova/plugins
+/src-cordova/www
+
+# Capacitor related directories and files
+/src-capacitor/www
+/src-capacitor/node_modules
+
+# Log files
 npm-debug.log*
 yarn-debug.log*
-pnpm-debug.log*
-lerna-debug.log*
+yarn-error.log*
 
-# Dependency directories
-node_modules/
-client/node_modules/
-
-# Build artifacts and compiled files
-dist/
-dist-ssr/
-client/dist/
-
-# Editor directories and system files
-.vscode/
-.idea/
-.DS_Store
+# Editor directories and files
+.idea
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
 
-# Environment files
-.env
-.env.local
-.env.dist
-
-# Miscellaneous
-tmp/
-.kamal/secrets
-
-# Package manager lock files
-package-lock.json
-client/package-lock.json
-
-# Public generated files
-client/public/manifest.json
-client/.next/
-client/.nuxt/
-client/.vercel/
-client/.cache/
+# local .env files
+.env.local*

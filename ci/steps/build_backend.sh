@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+RUBY_VERSION="${1:-3.2.2}"
+
+echo "[backend] Preparing Ruby ${RUBY_VERSION} for backend build…"
+
+# 0) Clean leaking env that can break bundler
+unset GEM_HOME GEM_PATH RUBYOPT BUNDLE_PATH BUNDLE_WITHOUT BUNDLE_GEMFILE || true
+
+# --- Keep bundler config & gems OUT of the repo (CI-only paths)
+# This prevents .bundle/config from being rsynced to the server.
+export BUNDLE_APP_CONFIG="${WORKSPACE:-$PWD}/.ci_bundler"
+export CI_BUNDLE_PATH="${WORKSPACE:-$PWD}/.vendor/bundle"
+
+# 1) Activate rbenv & Ruby
+if [ -x "$HOME/.rbenv/bin/rbenv" ]; then
+  export RBENV_ROOT="$HOME/.rbenv"
+  export PATH="$RBENV_ROOT/bin:$RBENV_ROOT/shims:$PATH"
+  eval "$(rbenv init - bash)"
+
+  if ! rbenv versions --bare | grep -qx "${RUBY_VERSION}"; then
+    echo "[backend] Installing Ruby ${RUBY_VERSION}…"
+    rbenv install -s "${RUBY_VERSION}"
+  fi
+
+  rbenv shell "${RUBY_VERSION}"
+  rbenv rehash
+else
+  echo "[WARN] rbenv not found; continuing with system Ruby: $(ruby -v)"
+fi
+
+echo "[backend] Ruby:  $(ruby -v)"
+echo "[backend] gem:   $(gem -v)"
+
+# 2) System native deps (safe to re-run) — but skip if sudo can't run non-interactively
+if command -v apt-get >/dev/null 2>&1; then
+  if command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+    echo "[backend] Installing native build deps if missing…"
+    sudo apt-get update -y || echo "[WARN] apt-get update had non-zero exit; continuing…"
+    sudo apt-get install -y build-essential libpq-dev pkg-config zlib1g-dev libssl-dev \
+      || echo "[WARN] Failed to install some native build packages — continuing…"
+  else
+    echo "[WARN] Skipping apt installs (no passwordless sudo)."
+  fi
+fi
+
+# 3) Use Bundler version pinned in Gemfile.lock (strip CR to avoid '2.6.2\r')
+BUNDLER_VERSION=""
+if [ -f Gemfile.lock ]; then
+  BUNDLER_VERSION="$(awk '/BUNDLED WITH/{getline; gsub(/^[ \t]+/,""); print; exit}' Gemfile.lock | tr -d '\r' || true)"
+fi
+
+if [ -n "${BUNDLER_VERSION}" ]; then
+  if ! gem list bundler -i -v "${BUNDLER_VERSION}" >/dev/null 2>&1; then
+    echo "[backend] Installing bundler ${BUNDLER_VERSION}…"
+    gem install "bundler:${BUNDLER_VERSION}" -N
+    command -v rbenv >/dev/null 2>&1 && rbenv rehash || true
+  fi
+  BUNDLE_CMD="bundle _${BUNDLER_VERSION}_"
+else
+  echo "[backend] No pinned Bundler; installing ~> 2.4…"
+  gem install 'bundler:~> 2.4' -N
+  command -v rbenv >/dev/null 2>&1 && rbenv rehash || true
+  BUNDLE_CMD="bundle"
+fi
+
+echo "[backend] Bundler: $($BUNDLE_CMD -v)"
+
+# 4) Make lockfile Linux-friendly if created on macOS/Windows
+$BUNDLE_CMD lock --add-platform x86_64-linux || true
+
+# 5) Install gems into CI workspace (not into repo or $HOME)
+mkdir -p "${BUNDLE_APP_CONFIG}" "${CI_BUNDLE_PATH}"
+export BUNDLE_PATH="${CI_BUNDLE_PATH}"
+export BUNDLE_WITHOUT="development:test"
+$BUNDLE_CMD config set path "$BUNDLE_PATH"
+$BUNDLE_CMD config set without "$BUNDLE_WITHOUT"
+$BUNDLE_CMD config set deployment 'true'
+
+echo "[backend] bundle install…"
+$BUNDLE_CMD install --jobs=4 --retry=3
+
+# 6) Skip any DB or asset work in CI
+echo "[backend] ✅ Gems installed (CI-only path: ${CI_BUNDLE_PATH})."
+echo "[backend] ✅ Skipping assets:precompile & migrations in CI — these run in deploy."
+echo "[backend] ✅ Ruby environment ready for backend build."
+echo "[backend] Current working directory: $(pwd)"
+echo "[backend] Ruby version: $(ruby -v)"

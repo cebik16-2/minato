@@ -1,0 +1,192 @@
+pipeline {
+  agent { label 'minato-ci' }
+  options {
+    timestamps()
+    // ansiColor('xterm') // enable if you have the AnsiColor plugin installed
+  }
+
+  environment {
+    NVM_DIR       = "/home/minato/.nvm"
+    DEPLOY_SCRIPT = "ci/deploy-wrapper.sh"
+    BUILD_DIR     = "/opt/jenkins/Minato-packaging"
+    NODE_VERSION  = "18.20.2"
+    RUBY_VERSION  = "3.2.2"
+
+    API_SERVER    = "minato-api"
+    SERVICE_NAME  = "minato-backend"
+    DB_HOST       = "192.168.0.200"
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        sh '''#!/usr/bin/env bash
+          set -euxo pipefail
+          echo "[CKO] Node: $(hostname) User: $(whoami) PWD: $(pwd)"
+        '''
+        git branch: 'feature/quasar-spa',
+            url: 'git@github.com:cebik16-2/minato.git'
+        sh 'echo "[CKO] Repo HEAD: $(git rev-parse --short HEAD)"'
+      }
+    }
+
+    stage('Prepare Build Directory') {
+      steps {
+        sh '''#!/usr/bin/env bash
+          set -euxo pipefail
+          echo "[PREP] Running ci/steps/prepare_build.sh"
+          ls -l ci/steps || true
+          bash -x ci/steps/prepare_build.sh
+        '''
+      }
+    }
+
+    stage('Verify Node.js') {
+      steps {
+        sh '''#!/usr/bin/env bash
+          set -euxo pipefail
+          echo "[NODE] Verifying Node ${NODE_VERSION}"
+          bash -x ci/steps/verify_node.sh ${NODE_VERSION}
+          echo "[NODE] node: $(node -v || true) npm: $(npm -v || true)"
+        '''
+      }
+    }
+
+    stage('Verify Ruby') {
+      steps {
+        sh '''#!/usr/bin/env bash
+          set -euxo pipefail
+          echo "[RUBY] Verifying Ruby ${RUBY_VERSION}"
+          bash -x ci/steps/verify_ruby.sh ${RUBY_VERSION}
+          echo "[RUBY] ruby: $(ruby -v || true) gem: $(gem -v || true)"
+        '''
+      }
+    }
+
+    stage('Build Frontend') {
+      steps {
+        withEnv(["VITE_API_URL=http://${API_SERVER}:3000"]) {
+          sh '''#!/usr/bin/env bash
+            set -euxo pipefail
+            echo "[FE] Building Quasar frontend"
+            cd client
+            echo "[FE] node: $(node -v) npm: $(npm -v)"
+            npm ci
+            npm run build
+            echo "[FE] Built artifacts:"
+            ls -l dist || true
+            ls -l dist/spa || true
+            test -f dist/spa/index.html
+          '''
+        }
+      }
+    }
+
+    stage('Build Backend') {
+      steps {
+        echo "[BB] ENTER stage Build Backend"
+        withCredentials([
+          string(credentialsId: 'minato-db-username', variable: 'MINATO_DATABASE_USERNAME'),
+          string(credentialsId: 'minato-db-password', variable: 'MINATO_DATABASE_PASSWORD')
+        ]) {
+          echo "[BB] withCredentials acquired: minato-db-username/password"
+          withEnv(["DB_HOST=${DB_HOST}"]) {
+            echo "[BB] withEnv set DB_HOST=${DB_HOST}"
+            sh '''#!/usr/bin/env bash
+              set -euxo pipefail
+              echo "[BB] In shell. PWD: $(pwd)  whoami: $(whoami)  hostname: $(hostname)"
+              echo "[BB] Show script presence:"
+              ls -l ci/steps || true
+              ls -l ci/steps/build_backend.sh || true
+              chmod +x ci/steps/build_backend.sh || true
+
+              # Assert required envs exist (do not echo secrets)
+              test -n "${DB_HOST}"
+              test -n "${MINATO_DATABASE_USERNAME}"
+              test -n "${MINATO_DATABASE_PASSWORD}"
+
+              export DB_HOST MINATO_DATABASE_USERNAME MINATO_DATABASE_PASSWORD
+              echo "[BB] Running build_backend.sh ${RUBY_VERSION}…"
+              bash -x ci/steps/build_backend.sh ${RUBY_VERSION}
+              RC=$?; echo "[BB] build_backend.sh exited with: ${RC}"; exit ${RC}
+            '''
+          }
+        }
+      }
+    }
+
+    stage('Deploy to API Server') {
+      steps {
+          echo "[DEPLOY] ENTER stage Deploy to API Server"
+          withCredentials([
+              sshUserPrivateKey(credentialsId: 'minato-api-deploy-key', keyFileVariable: 'SSH_KEY', usernameVariable: 'API_USER'),
+              string(credentialsId: 'minato-db-username', variable: 'MINATO_DATABASE_USERNAME'),
+              string(credentialsId: 'minato-db-password', variable: 'MINATO_DATABASE_PASSWORD'),
+              string(credentialsId: 'MINATO_SECRET_KEY_BASE', variable: 'SECRET_KEY_BASE')
+          ]) {
+              sh '''#!/usr/bin/env bash
+                set -euxo pipefail
+
+                echo "[DEPLOY] Using script: ${DEPLOY_SCRIPT}"
+                test -f "${DEPLOY_SCRIPT}"
+
+                eval "$(ssh-agent -s)" >/dev/null
+                chmod 600 "$SSH_KEY"
+                ssh-add "$SSH_KEY" >/dev/null
+
+                export SSH_OPTIONS="-o StrictHostKeyChecking=no"
+
+                # Pass env to script without echoing secrets
+                export API_SERVER SERVICE_NAME RUBY_VERSION
+                export DB_HOST MINATO_DATABASE_USERNAME MINATO_DATABASE_PASSWORD SECRET_KEY_BASE
+
+                bash ${DEPLOY_SCRIPT}
+              '''
+            }
+        } 
+    }
+
+
+    stage('Post-Deploy Verification') {
+      parallel {
+        stage('Check API Health') {
+          steps {
+            sh '''#!/usr/bin/env bash
+              set -euxo pipefail
+              echo "[VERIFY] Waiting for API health at http://${API_SERVER}:3000/api/health…"
+              ATTEMPTS=30
+              until curl -fsSL "http://${API_SERVER}:3000/api/health" | grep -q '"status":"ok"'; do
+                ((ATTEMPTS--))
+                if [ $ATTEMPTS -le 0 ]; then
+                  echo '[ERROR] API health check failed'
+                  exit 1
+                fi
+                sleep 2
+              done
+              echo "[VERIFY] API is healthy."
+            '''
+          }
+        }
+        stage('Check Frontend') {
+          steps {
+            sh '''#!/usr/bin/env bash
+              set -euxo pipefail
+              echo "[VERIFY] Checking frontend…"
+              curl -sf http://minato.stevebytesnest.com >/dev/null || {
+                echo '[ERROR] Frontend check failed'
+                exit 1
+              }
+              echo "[VERIFY] Frontend is reachable."
+            '''
+          }
+        }
+      }
+    }
+  }
+
+  post {
+    failure {
+      echo "[ROLLBACK] Deployment failed. Add rollback steps here if needed."
+    }
+  }
+}

@@ -1,32 +1,51 @@
 Rails.application.routes.draw do
-  devise_for :users, controllers: { sessions: "users/sessions" }
+  # ✅ Devise Token Auth with custom confirmations controller
+  mount_devise_token_auth_for 'User', at: 'auth', controllers: {
+    confirmations: 'users/confirmations'
+  }
 
-  resources :users, only: [ :index, :show ] do
-    resources :products # Nested resources for products
-  end
-
-  resources :favorites, only: [ :index, :create, :destroy ] # adjust actions as needed
-  resources :cities, only: [ :index ] # assuming you just need to list them
-  resources :categories, only: [:index] # assuming you just need to list them
-
-  resources :products do
-    member do
-      delete "detach_file/:file_id", to: "products#detach_file", as: "detach_file"
+  # API namespace
+  namespace :api do
+    # 👤 Users
+    resources :users, only: [:index, :show] do
+      collection do
+        get :current
+        put :current, to: 'users#update_current'
+      end
     end
+
+    # 💖 Favorites API
+    resources :favorites, only: [:index, :create, :destroy]
+
+    # 🌆 Cities and categories
+    resources :cities, only: [:index]
+    resources :categories, only: [:index, :create, :update, :destroy]
+
+    # 📦 Products with file detach route
+    resources :products do
+      collection do
+        get :my_products
+      end
+      member do
+        delete "detach_file/:file_id", to: "products#detach_file", as: "detach_file"
+      end
+    end
+
+    # 📋 Listings route
+    resources :listings, only: [:index, :show]
+
+    # 🧪 Health check endpoint
+    get "health" => "rails/health#show", as: :api_health
   end
 
-  resources :listings, only: [ :index, :show ] # Add this line to create a /listings endpoint
-
+  # 🏠 Welcome page & root
   get "welcome/index"
   root "welcome#index"
 
-  # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
+  # 🧪 Global health check endpoint (non-namespaced)
   get "up" => "rails/health#show", as: :rails_health_check
 
-  # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)
+  # 🔧 PWA endpoints (uncomment if you use them)
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
-
-  # Defines the root path route ("/")
-  # root "posts#index"
 end

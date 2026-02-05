@@ -1,7 +1,7 @@
 module Users
   class SessionsController < Devise::SessionsController
     respond_to :json
-    skip_before_action :verify_authenticity_token, only: [ :create, :destroy ]
+    skip_before_action :verify_authenticity_token, raise: false, only: [:create, :destroy]
 
     private
 

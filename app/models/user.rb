@@ -1,10 +1,15 @@
 class User < ApplicationRecord
+  # Include default devise modules.
+  include DeviseTokenAuth::Concerns::User
+  
   # Devise modules for authentication and user management
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :validatable,
-         :trackable, :confirmable, :lockable,
-         :jwt_authenticatable, jwt_revocation_strategy: Devise::JWT::RevocationStrategies::Null
+         :trackable, :confirmable, :lockable
 
+  # Skip confirmation in development
+  before_create :skip_confirmation_in_development
+  
   # Products the user is selling
   has_many :listed_products, foreign_key: :seller_id, class_name: "Product", dependent: :destroy
 
@@ -25,5 +30,11 @@ class User < ApplicationRecord
   # Helper method
   def full_name
     "#{first_name} #{last_name}".strip
+  end
+
+  private
+
+  def skip_confirmation_in_development
+    skip_confirmation! if Rails.env.development?
   end
 end
