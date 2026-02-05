@@ -4,18 +4,9 @@
     <BannerCarousel :slides="slides" />
 
     <!-- Product List -->
-    <q-infinite-scroll
-      @load="loadMore"
-      :offset="100"
-      ref="infiniteScrollRef"
-      :disable="!hasMore"
-    >
-      <ProductList
-        :products="products"
-        :favoritedIds="favoritedProductIds"
-        @view-item="viewItem"
-        @toggle-favorite="toggleFavorite"
-      />
+    <q-infinite-scroll @load="loadMore" :offset="100" ref="infiniteScrollRef" :disable="!hasMore">
+      <ProductList :products="products" :favoritedIds="favoritedProductIds" @view-item="viewItem"
+        @toggle-favorite="toggleFavorite" />
 
       <template v-slot:loading>
         <div class="row justify-center q-my-md">
@@ -25,25 +16,17 @@
     </q-infinite-scroll>
 
     <!-- Quick View Modal -->
-    <QuickViewModal
-      v-model="quickViewVisible"
-      :item="selectedItem"
-      @close="quickViewVisible = false"
-      @add-to-cart="addToCart"
-    />
+    <QuickViewModal v-model="quickViewVisible" :item="selectedItem" @close="quickViewVisible = false"
+      @add-to-cart="addToCart" />
 
     <!-- Add Item Modal -->
-    <AddItemModal
-      v-if="showAddItem"
-      @item-added="handleItemAdded"
-      @close="showAddItem = false"
-    />
+    <AddItemModal v-if="showAddItem" @item-added="handleItemAdded" @close="showAddItem = false" />
   </q-page>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import BannerCarousel from 'src/components/sections/BannerCarousel.vue'
 import ProductList from 'src/components/sections/ProductList.vue'
 import QuickViewModal from 'src/components/modals/QuickViewModal.vue'
@@ -56,6 +39,7 @@ import banner2 from '../assets/banners/banner-2.webp'
 import banner3 from '../assets/banners/banner-3.webp'
 
 const route = useRoute()
+const router = useRouter()
 
 interface Favorite {
   id: number
@@ -147,18 +131,24 @@ const handleItemAdded = (newItem: Product) => {
   showAddItem.value = false
 }
 
-// 👁️ View product (opens modal)
+// 👁️ View product (navigates to detail page)
 const viewItem = (item: Product) => {
-  selectedItem.value = item
-  quickViewVisible.value = true
+  void router.push({ name: 'product-detail', params: { id: item.id } })
 }
 
 // ⬇️ Infinite Scroll Loader
 const loadMore = async (_index: number, done: (stop?: boolean) => void) => {
   try {
     console.log(`📥 Loading products: page=${page.value}, categoryId=${selectedCategoryId.value}`)
-    const res = await fetchProducts(page.value, selectedCategoryId.value || undefined)
-    
+    console.log(`📥 Loading products: page=${page.value}, categoryId=${selectedCategoryId.value}`)
+    const filters = {
+      min_price: Number(route.query['min_price']) || undefined,
+      max_price: Number(route.query['max_price']) || undefined,
+      city: route.query['city'] as string || undefined
+    }
+
+    const res = await fetchProducts(page.value, selectedCategoryId.value || undefined, 8, filters)
+
     // Handle response structure: API returns {data: {products: [], meta: {}}}
     const productsData = res.data?.products || []
     const meta = res.data?.meta
@@ -207,10 +197,11 @@ onMounted(() => {
 
 // 🔄 Watch for route changes (category filter)
 watch(
-  () => route.query['category'],
-  async (newCategory) => {
-    console.log(`� WATCH FIRED! Category query changed to:`, newCategory)
-    console.log(`�🔄 Category filter changed to: ${String(newCategory ?? '')}`)
+  () => route.query,
+  async (newQuery) => {
+    console.log(` WATCH FIRED! Query changed:`, newQuery)
+    const newCategory = newQuery['category']
+    console.log(`🔄 Category filter changed to: ${String(newCategory ?? '')}`)
     // Reset pagination but DON'T clear products yet (loadMore will handle it)
     page.value = 1
     hasMore.value = true
@@ -219,10 +210,12 @@ watch(
     } else {
       selectedCategoryId.value = null
     }
-    // Load products directly for the new category
+
+    // Load products directly for the new filters
     await loadMore(0, () => {
       // callback resolved
     })
-  }
+  },
+  { deep: true }
 )
 </script>

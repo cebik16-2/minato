@@ -8,6 +8,11 @@ const routes: RouteRecordRaw[] = [
     children: [
       {
         path: '',
+        name: 'landing',
+        component: () => import('pages/LandingPage.vue')
+      },
+      {
+        path: 'my-account',
         name: 'marketplace',
         component: () => import('pages/MarketplacePage.vue')
       },

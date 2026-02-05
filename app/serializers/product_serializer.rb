@@ -1,6 +1,7 @@
 class ProductSerializer < ActiveModel::Serializer
   attributes :id, :title, :price, :description, :category_id, :sku, :product_type,
-             :category_name, :created_at, :thumbnail_url, :image_urls
+             :category_name, :created_at, :thumbnail_url, :image_urls,
+             :manufacturer, :model, :year, :condition
 
   belongs_to :category
   belongs_to :seller, class_name: "User"  # 👈 matches `seller_id`

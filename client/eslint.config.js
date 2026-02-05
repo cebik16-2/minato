@@ -33,7 +33,7 @@ export default defineConfigWithVueTs(
    * pluginVue.configs["flat/recommended"]
    *   -> Above, plus rules to enforce subjective community defaults to ensure consistency.
    */
-  pluginVue.configs[ 'flat/essential' ],
+  pluginVue.configs['flat/essential'],
 
   {
     files: ['**/*.ts', '**/*.vue'],
@@ -51,6 +51,11 @@ export default defineConfigWithVueTs(
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
+      parserOptions: {
+        project: './tsconfig.json',
+        tsconfigRootDir: import.meta.dirname,
+        parser: '@typescript-eslint/parser'
+      },
 
       globals: {
         ...globals.browser,
@@ -69,12 +74,14 @@ export default defineConfigWithVueTs(
       'prefer-promise-reject-errors': 'off',
 
       // allow debugger during development only
-      'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off'
+      'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off',
+
+      '@typescript-eslint/no-explicit-any': 'off'
     }
   },
 
   {
-    files: [ 'src-pwa/custom-service-worker.ts' ],
+    files: ['src-pwa/custom-service-worker.ts'],
     languageOptions: {
       globals: {
         ...globals.serviceworker

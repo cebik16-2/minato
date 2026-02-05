@@ -1,9 +1,10 @@
 // src/quasar-user-options.ts
-import { Notify } from 'quasar';
+import { Notify, Dark } from 'quasar';
 
 export default {
   plugins: {
-    Notify
+    Notify,
+    Dark
   }
 };
 // src/components/models.ts

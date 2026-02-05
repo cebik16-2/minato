@@ -14,11 +14,30 @@ interface PaginationMeta {
 export const fetchProducts = async (
   page = 1,
   categoryId?: number,
-  perPage = 20
+  perPage = 20,
+  filters?: {
+    min_price?: number
+    max_price?: number
+    city?: string
+    manufacturer?: string
+    model?: string
+    condition?: string
+    min_year?: number
+    max_year?: number
+  }
 ): Promise<{ data: { products: Product[]; meta: PaginationMeta } }> => {
-  const response = await api.get('/api/products', {
-    params: { page, per_page: perPage, category_id: categoryId }
-  })
+  const params: any = { page, per_page: perPage, category_id: categoryId }
+
+  if (filters?.min_price) params.min_price = filters.min_price
+  if (filters?.max_price) params.max_price = filters.max_price
+  if (filters?.city) params.city = filters.city
+  if (filters?.manufacturer) params.manufacturer = filters.manufacturer
+  if (filters?.model) params.model = filters.model
+  if (filters?.condition) params.condition = filters.condition
+  if (filters?.min_year) params.min_year = filters.min_year
+  if (filters?.max_year) params.max_year = filters.max_year
+
+  const response = await api.get('/api/products', { params })
 
   return response
 }
@@ -42,3 +61,5 @@ export const updateProduct = (id: number, product: object) =>
 
 // ❌ Delete a product by ID
 export const deleteProduct = (id: number) => api.delete(`/api/products/${id}`)
+
+

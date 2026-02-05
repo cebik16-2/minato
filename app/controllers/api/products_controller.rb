@@ -12,6 +12,29 @@ module Api
       # Filter by category if provided
       products = products.where(category_id: params[:category_id]) if params[:category_id].present?
 
+      # Filter by manufacturer/make
+      products = products.where(manufacturer: params[:manufacturer]) if params[:manufacturer].present?
+
+      # Filter by model
+      products = products.where(model: params[:model]) if params[:model].present?
+
+      # Filter by condition (case insensitive search for flexibility)
+      products = products.where("LOWER(condition) = ?", params[:condition].downcase) if params[:condition].present?
+
+      # Filter by year or year range
+      if params[:min_year].present? || params[:max_year].present?
+        min_year = params[:min_year].presence || 0
+        max_year = params[:max_year].presence || 9999
+        products = products.where(year: min_year..max_year)
+      end
+
+      # Filter by price range
+      if params[:min_price].present? || params[:max_price].present?
+        min_price = params[:min_price].presence || 0
+        max_price = params[:max_price].presence || Float::INFINITY
+        products = products.where(price: min_price..max_price)
+      end
+
       products = products
         .page(params[:page])
         .per(params[:per_page] || 20)
@@ -84,7 +107,7 @@ module Api
     end
 
     def product_params
-      params.require(:product).permit(:title, :price, :description, :category_id, :sku, :product_type)
+      params.require(:product).permit(:title, :price, :description, :category_id, :sku, :product_type, :manufacturer, :model, :year, :condition)
     end
 
     def attach_files_to_product(product)
