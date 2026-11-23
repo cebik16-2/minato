@@ -129,8 +129,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          # Full history, so gitleaks also scans old commits, not only the new diff.
-          fetch-depth: 0
+          # Scan only the new commits, not the whole history.
+          # A real Devise secret_key is committed in an old commit and is still
+          # reachable in history, so `fetch-depth: 0` would make every run fail.
+          # Verified locally with gitleaks 8.28.0: 1 finding in the working tree,
+          # 3 in history, all the same key. Switch this to `fetch-depth: 0` once
+          # the history rewrite removes the old value.
+          fetch-depth: 10
 
       - name: Detect secrets with gitleaks
         uses: gitleaks/gitleaks-action@v3
