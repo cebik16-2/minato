@@ -20,7 +20,8 @@ const useLoginForm = () => {
     try {
       const response = await loginUser(email, password); // Call API
       localStorage.setItem("authToken", response.token); // Store JWT token
-      window.location.href = "/dashboard"; // Redirect after login
+      // App.jsx has no /dashboard route; /listings is the closest real route.
+      window.location.href = "/listings"; // Redirect after login
     } catch (err) {
       setError("Invalid email or password.");
     } finally {

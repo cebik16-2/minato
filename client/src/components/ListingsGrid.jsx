@@ -45,11 +45,4 @@ ListingsGrid.propTypes = {
   emptyMessage: PropTypes.string,
 };
 
-ListingsGrid.defaultProps = {
-  listings: [],
-  loading: false,
-  error: null,
-  emptyMessage: "No listings available.",
-};
-
 export default ListingsGrid;

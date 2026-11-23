@@ -2,7 +2,14 @@ import React from "react";
 import PropTypes from "prop-types";
 import { Card, CardContent, Typography, Button, Stack } from "@mui/material";
 
-const DashboardCard = ({ title, description, buttonText, onClick, icon: Icon, sx }) => {
+const DashboardCard = ({
+  title,
+  description,
+  buttonText = null,
+  onClick = null,
+  icon: Icon = null,
+  sx = {},
+}) => {
   return (
     <Card
       sx={{
@@ -53,13 +60,6 @@ DashboardCard.propTypes = {
   onClick: PropTypes.func,
   sx: PropTypes.object,
   icon: PropTypes.elementType,
-};
-
-DashboardCard.defaultProps = {
-  buttonText: null,
-  onClick: null,
-  sx: {},
-  icon: null,
 };
 
 export default DashboardCard;

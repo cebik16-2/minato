@@ -30,3 +30,30 @@ export const getFavorites = async () => {
   });
   return handleResponse(response);
 };
+
+// The backend answers 204 No Content, which handleResponse rejects as
+// "not JSON", so accept that status here.
+const favoriteResponse = async (response) =>
+  response.status === 204 ? null : handleResponse(response);
+
+export const postFavorite = async (listingId) => {
+  const token = getAuthToken();
+  const response = await fetch(`${BASE_URL}/favorites`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ favorite: { listing_id: listingId } }),
+  });
+  return favoriteResponse(response);
+};
+
+export const deleteFavorite = async (listingId) => {
+  const token = getAuthToken();
+  const response = await fetch(`${BASE_URL}/favorites/${listingId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return favoriteResponse(response);
+};

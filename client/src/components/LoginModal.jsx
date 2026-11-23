@@ -5,7 +5,17 @@ import useLoginForm from "../hooks/useLoginForm";
 import { LOGIN_MESSAGES, PLACEHOLDERS } from "../constants/messages";
 import { useAuth } from "../context/AuthContext";
 import "../styles/components/LoginModal.css";
-import { Box, TextField, Button, Typography, CircularProgress, Alert } from "@mui/material";
+import {
+  Box,
+  TextField,
+  Button,
+  Typography,
+  CircularProgress,
+  Alert,
+  IconButton,
+  Tooltip,
+} from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 
 const LoginModal = () => {
   const { email, password, error, setEmail, setPassword, setError } = useLoginForm();
@@ -20,7 +30,6 @@ const LoginModal = () => {
 
     try {
       const data = await loginUser(email, password);
-      console.log("🔐 Login response:", data);
 
       if (data?.token) {
         login(data.token);
@@ -28,7 +37,6 @@ const LoginModal = () => {
         navigate("/listings");
       } else {
         setError(LOGIN_MESSAGES.INVALID_CREDENTIALS);
-        console.warn("⚠️ Missing token in response:", data);
       }
     } catch (err) {
       console.error("❌ Login error:", err);
@@ -45,9 +53,18 @@ const LoginModal = () => {
   return (
     <div className="login-modal">
       <div className="login-modal-content">
-        <Typography variant="h5" component="h2" gutterBottom>
-          Login
-        </Typography>
+        <Box
+          sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}
+        >
+          <Typography variant="h5" component="h2" gutterBottom>
+            Login
+          </Typography>
+          <Tooltip title="Close">
+            <IconButton onClick={closeLoginModal} aria-label="Close login modal" size="large">
+              <CloseIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
         <form onSubmit={handleSubmit}>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <TextField

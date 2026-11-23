@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import { getListings } from "../services/listings";
 import { LISTING_DETAILS_MESSAGES } from "../constants/listingDetailsMessages";
+import { formatPrice } from "../utils/formatPrice";
 
 const ListingDetails = () => {
   const { id } = useParams();
@@ -77,7 +78,7 @@ const ListingDetails = () => {
       </Typography>
 
       <Typography variant="body1" sx={{ mb: 1 }}>
-        <strong>Price:</strong> ${listing.price.toLocaleString()}
+        <strong>Price:</strong> ${formatPrice(listing.price)}
       </Typography>
 
       <Typography variant="body1" sx={{ mb: 1 }}>
@@ -145,7 +146,7 @@ const ListingDetails = () => {
                     {related.title}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    <strong>Price:</strong> ${related.price.toLocaleString()}
+                    <strong>Price:</strong> ${formatPrice(related.price)}
                   </Typography>
                   <Button
                     variant="outlined"

@@ -7,6 +7,8 @@ const FilterBar = ({
   setSearchQuery,
   priceRange,
   setPriceRange,
+  priceMin = 0,
+  priceMax = 10000,
   location,
   setLocation,
   sortOption,
@@ -27,8 +29,8 @@ const FilterBar = ({
         value={priceRange}
         onChange={(e, newValue) => setPriceRange(newValue)}
         valueLabelDisplay="auto"
-        min={0}
-        max={2000}
+        min={priceMin}
+        max={priceMax}
       />
     </FormControl>
     <FormControl fullWidth margin="normal">

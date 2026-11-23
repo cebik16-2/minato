@@ -2,6 +2,7 @@ import React, { Suspense } from "react";
 import { Route, Routes } from "react-router-dom";
 import Layout from "./components/Layout";
 import LoginModal from "./components/LoginModal"; // ✅ new modal
+import RequireAuth from "./components/RequireAuth";
 
 import { useAuth } from "./context/AuthContext";
 import { CircularProgress } from "@mui/material";
@@ -29,11 +30,46 @@ const App = () => {
         <Suspense fallback={<CircularProgress />}>
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/admin" element={<AdminDashboardPage />} />
-            <Route path="/admin/listings" element={<ListingsAdmin />} />
-            <Route path="/admin/users" element={<UsersAdmin />} />
-            <Route path="/admin/reports" element={<ReportsAdmin />} />
-            <Route path="/admin/settings" element={<SettingsAdmin />} />
+            <Route
+              path="/admin"
+              element={
+                <RequireAuth>
+                  <AdminDashboardPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/listings"
+              element={
+                <RequireAuth>
+                  <ListingsAdmin />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <RequireAuth>
+                  <UsersAdmin />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/reports"
+              element={
+                <RequireAuth>
+                  <ReportsAdmin />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/settings"
+              element={
+                <RequireAuth>
+                  <SettingsAdmin />
+                </RequireAuth>
+              }
+            />
             <Route path="/listings" element={<Listings />} />
             <Route path="/listing/:id" element={<ListingDetails />} />
             <Route path="/create-listing" element={<CreateEditListingPage />} />

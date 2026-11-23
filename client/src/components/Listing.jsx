@@ -14,6 +14,7 @@ import {
 } from "@mui/material";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
+import { formatPrice } from "../utils/formatPrice";
 
 const Listing = ({
   id,
@@ -21,7 +22,8 @@ const Listing = ({
   price,
   location,
   isFavorite = false,
-  toggleFavorite,
+  // ListingsGrid renders <Listing {...listing} /> with no handler.
+  toggleFavorite = () => {},
   imageUrl = "",
   isNew = false,
   isFeatured = false,
@@ -90,7 +92,7 @@ const Listing = ({
           </Typography>
 
           <Typography variant="body2" color="text.secondary">
-            <strong>Price:</strong> ${price.toLocaleString()}
+            <strong>Price:</strong> ${formatPrice(price)}
           </Typography>
 
           <Typography variant="body2" color="text.secondary">
@@ -117,10 +119,10 @@ const Listing = ({
 Listing.propTypes = {
   id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
   title: PropTypes.string.isRequired,
-  price: PropTypes.number.isRequired,
+  price: PropTypes.number,
   location: PropTypes.string.isRequired,
   isFavorite: PropTypes.bool,
-  toggleFavorite: PropTypes.func.isRequired,
+  toggleFavorite: PropTypes.func,
   imageUrl: PropTypes.string,
   isNew: PropTypes.bool,
   isFeatured: PropTypes.bool,

@@ -11,7 +11,10 @@ const useListingDetails = (id) => {
     const fetchListing = async () => {
       try {
         const listings = await getListings();
-        const foundListing = listings.find((item) => item.id === id);
+        // useParams() gives a string; the API id may be a number.
+        const foundListing = listings.find(
+          (item) => String(item.id) === String(id)
+        );
         if (foundListing) {
           setListing(foundListing);
 

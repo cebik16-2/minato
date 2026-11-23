@@ -25,7 +25,12 @@ export const loginUser = async (email, password) => {
 
   return data; // you might get { token, user, message }
 };
-export const registerUser = async (email, password, passwordConfirmation) => {
+export const registerUser = async (
+  email,
+  password,
+  passwordConfirmation,
+  username
+) => {
   const response = await fetch(`${BASE_URL}/users`, {
     method: "POST",
     headers: {
@@ -36,6 +41,8 @@ export const registerUser = async (email, password, passwordConfirmation) => {
         email: email.trim(),
         password: password.trim(),
         password_confirmation: passwordConfirmation.trim(),
+        // Optional: only sent when the caller has a username field.
+        ...(username ? { username: username.trim() } : {}),
       },
     }),
   });

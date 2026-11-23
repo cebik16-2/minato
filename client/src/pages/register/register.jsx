@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { registerUser } from "../../services/auth";
 import "../../styles/pages/Register.css";
 
 const Register = () => {
@@ -19,27 +20,13 @@ const Register = () => {
     }
 
     try {
-      const response = await fetch("http://127.0.0.1:3000/users.json", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-        },
-        body: JSON.stringify({
-          user: { username, email, password },
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        setError(errorData.errors ? errorData.errors.join(", ") : "Registration failed");
-        return;
-      }
+      // The API needs password_confirmation; this form has one password field.
+      await registerUser(email, password, password, username);
 
       setSuccessMessage("Registration successful! Redirecting...");
       setTimeout(() => navigate("/"), 2000);
     } catch (error) {
-      setError("An error occurred. Please try again.");
+      setError(error?.message || "An error occurred. Please try again.");
     }
   };
 

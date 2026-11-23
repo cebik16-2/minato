@@ -10,6 +10,7 @@ import {
   Grid,
 } from "@mui/material";
 import { LISTING_DETAILS_MESSAGES } from "../constants/listingDetailsMessages";
+import { formatPrice } from "../utils/formatPrice";
 
 const RelatedListings = ({ listings = [] }) => {
   const navigate = useNavigate();
@@ -38,7 +39,7 @@ const RelatedListings = ({ listings = [] }) => {
                     {item.title}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    <strong>Price:</strong> ${item.price.toLocaleString()}
+                    <strong>Price:</strong> ${formatPrice(item.price)}
                   </Typography>
                   <Button
                     variant="contained"
@@ -67,7 +68,7 @@ RelatedListings.propTypes = {
     PropTypes.shape({
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
       title: PropTypes.string.isRequired,
-      price: PropTypes.number.isRequired,
+      price: PropTypes.number,
     })
   ),
 };

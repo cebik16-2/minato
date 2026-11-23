@@ -3,7 +3,13 @@ import PropTypes from "prop-types";
 import { Modal as MuiModal, Box, IconButton, Tooltip, Typography } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
-const Modal = ({ isOpen, onClose, children, title, description }) => {
+const Modal = ({
+  isOpen,
+  onClose,
+  children,
+  title = null,
+  description = null,
+}) => {
   const modalId = "custom-modal";
   const descriptionId = "custom-modal-description";
 
@@ -64,11 +70,6 @@ Modal.propTypes = {
   children: PropTypes.node.isRequired,
   title: PropTypes.string,
   description: PropTypes.string,
-};
-
-Modal.defaultProps = {
-  title: null,
-  description: null,
 };
 
 export default Modal;

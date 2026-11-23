@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   AppBar,
   Toolbar,
@@ -29,6 +29,11 @@ const Layout = ({ children }) => {
     navigate("/create-listing");
   }, [userId, navigate]);
 
+  // A successful login closes the auth modal.
+  useEffect(() => {
+    if (userId && isAuthModalOpen) setIsAuthModalOpen(false);
+  }, [userId, isAuthModalOpen]);
+
   const handleAuthClick = () => setIsAuthModalOpen(true);
   const handleAuthModalClose = () => {
     setIsAuthModalOpen(false);
@@ -48,9 +53,9 @@ const Layout = ({ children }) => {
           </Typography>
 
           <Button
-            color={location.pathname === "/FeaturedListings" ? "secondary" : "inherit"}
+            color={location.pathname === "/featuredlistings" ? "secondary" : "inherit"}
             component={Link}
-            to="/FeaturedListings"
+            to="/featuredlistings"
             aria-label="View Favorites"
           >
             Favorites
@@ -66,10 +71,12 @@ const Layout = ({ children }) => {
 
           {userId ? (
             <>
+              {/* App.jsx routes no account page (pages/myaccount/MyAccount.jsx
+                  is not wired up), so this points at the closest real route. */}
               <Button
-                color={location.pathname === "/my-account" ? "secondary" : "inherit"}
+                color={location.pathname === "/listings" ? "secondary" : "inherit"}
                 component={Link}
-                to="/my-account"
+                to="/listings"
                 aria-label="Go to My Account"
               >
                 My Account

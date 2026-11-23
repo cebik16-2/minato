@@ -4,7 +4,12 @@ import { HOMEPAGE_MESSAGES } from "../constants/homepageMessages";
 import { useNavigate } from "react-router-dom";
 import { Box, Typography, Button, Stack } from "@mui/material";
 
-const HeroSection = ({ title, subtitle, buttonText, background }) => {
+const HeroSection = ({
+  title = HOMEPAGE_MESSAGES.HERO_TITLE,
+  subtitle = HOMEPAGE_MESSAGES.HERO_SUBTITLE,
+  buttonText = HOMEPAGE_MESSAGES.CTA_BUTTON,
+  background = "linear-gradient(to right, #f0f4ff, #ffffff)",
+}) => {
   const navigate = useNavigate();
 
   const styles = {
@@ -67,13 +72,6 @@ HeroSection.propTypes = {
   subtitle: PropTypes.string,
   buttonText: PropTypes.string,
   background: PropTypes.string,
-};
-
-HeroSection.defaultProps = {
-  title: HOMEPAGE_MESSAGES.HERO_TITLE,
-  subtitle: HOMEPAGE_MESSAGES.HERO_SUBTITLE,
-  buttonText: HOMEPAGE_MESSAGES.CTA_BUTTON,
-  background: "linear-gradient(to right, #f0f4ff, #ffffff)",
 };
 
 export default HeroSection;

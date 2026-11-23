@@ -6,7 +6,9 @@ export const filterAndSortListings = (listings, filters) => {
   // Filter listings
   const filteredListings = safeListings.filter(
     (listing) =>
-      listing.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
+      (listing.title || "")
+        .toLowerCase()
+        .includes((searchQuery || "").toLowerCase()) &&
       listing.price >= priceRange[0] &&
       listing.price <= priceRange[1] &&
       (location === "" || listing.location === location)
@@ -20,9 +22,9 @@ export const filterAndSortListings = (listings, filters) => {
       case "priceHighToLow":
         return b.price - a.price;
       case "titleAsc":
-        return a.title.localeCompare(b.title);
+        return (a.title || "").localeCompare(b.title || "");
       case "titleDesc":
-        return b.title.localeCompare(a.title);
+        return (b.title || "").localeCompare(a.title || "");
       default:
         return 0;
     }

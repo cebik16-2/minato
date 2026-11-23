@@ -8,7 +8,7 @@ import {
   CircularProgress,
   MenuItem,
 } from '@mui/material';
-import { createUserProduct } from '../../services';
+import { createUserProduct, getCategories } from '../../services';
 import { getUserIdFromToken } from '../../utils/auth';
 
 const CreateListing = () => {
@@ -25,13 +25,8 @@ const CreateListing = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/categories`);
-        
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
-  
-        const data = await res.json();
+        // The service adds BASE_URL and the Authorization header.
+        const data = await getCategories();
   
         let fetchedCategories = [];
         if (Array.isArray(data)) {
@@ -65,7 +60,6 @@ const CreateListing = () => {
       description,
       category_id: Number(categoryId),
     };
-    console.log("💥 userId before createUserProduct:", userId);
 
     try {
       await createUserProduct(userId, newListing);
