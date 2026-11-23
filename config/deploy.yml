@@ -1,3 +1,21 @@
+# ---------------------------------------------------------------------------
+# WARNING: THIS FILE IS NOT CONFIGURED. DO NOT DEPLOY WITH THESE VALUES.
+#
+# Every value below is still Kamal boilerplate from `kamal init`:
+#   image:                your-user/minato   (a registry account that is not yours)
+#   servers / web:        192.168.0.1        (a placeholder address)
+#   proxy.ssl.host:       app.example.com    (a placeholder domain)
+#   registry.username:    your-user          (a placeholder account)
+#
+# Fill in all four before you run `bin/kamal deploy`. Also set the secrets in
+# .kamal/secrets (KAMAL_REGISTRY_PASSWORD, RAILS_MASTER_KEY) and the production
+# database variables that config/database.yml reads
+# (MINATO_DATABASE_USERNAME, MINATO_DATABASE_PASSWORD, and DB_HOST).
+#
+# The values are left in place, not commented out, so that this file stays valid
+# YAML and `bin/kamal` keeps parsing it. Read this block before every deploy.
+# ---------------------------------------------------------------------------
+
 # Name of your application. Used to uniquely configure containers.
 service: minato
 

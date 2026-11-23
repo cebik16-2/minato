@@ -10,3 +10,17 @@ updates:
   schedule:
     interval: daily
   open-pull-requests-limit: 10
+# npm: the root package.json (Hotwire asset build) and the React app in client/.
+# Note: Dependabot needs a lock file. The root package-lock.json is committed.
+# client/package-lock.json is git-ignored, so this second entry does nothing until
+# that ignore rule is removed and a lock file is committed.
+- package-ecosystem: npm
+  directory: "/"
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 10
+- package-ecosystem: npm
+  directory: "/client"
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 10

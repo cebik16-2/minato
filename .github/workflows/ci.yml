@@ -42,3 +42,99 @@ jobs:
 
       - name: Lint code for consistent style
         run: bin/rubocop -f github
+
+  frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+
+      - name: Install client dependencies
+        run: npm ci
+        working-directory: client
+
+      # NOTE: client/eslint.config.js only matches **/*.{ts,tsx}, and the client is
+      # 65 .jsx files plus one .d.ts. This step therefore lints nothing today and
+      # always passes. Follow-up: widen the flat config to **/*.jsx and fix the
+      # findings in a separate PR - widening it here would fail on pre-existing
+      # issues and block this review.
+      - name: Lint client
+        run: npm run lint
+        working-directory: client
+
+      - name: Build client
+        run: npm run build
+        working-directory: client
+
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      RAILS_ENV: test
+      # config/database.yml reads these names. They must match the service above.
+      DB_HOST: localhost
+      DB_PORT: "5432"
+      MINATO_DATABASE_USERNAME: postgres
+      MINATO_DATABASE_PASSWORD: postgres
+      # CI-only dummy value. Never put a real secret here.
+      DEVISE_JWT_SECRET_KEY: ci-only-not-a-real-secret
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+
+      - name: Prepare the test database
+        run: bin/rails db:prepare
+
+      # The repository has no Rails tests yet, so this step runs zero tests today.
+      # It still boots the app with eager loading on, and it loads db/schema.rb.
+      - name: Run tests
+        run: bin/rails test
+
+  secret_scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read        # to check out the code
+      pull-requests: write  # so gitleaks can comment on the pull request
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # Full history, so gitleaks also scans old commits, not only the new diff.
+          fetch-depth: 0
+
+      - name: Detect secrets with gitleaks
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Not needed for a personal account. Set it only if the repo moves to an organization.
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
