@@ -1,6 +1,9 @@
 Rails.application.routes.draw do
   devise_for :users, controllers: { sessions: "users/sessions" }
 
+  # The web client calls GET /users and GET /users/:id (admin screens), so
+  # both stay. They are gated by authenticate_user! in UsersController and
+  # UserSerializer exposes only safe fields. No other user route is exposed.
   resources :users, only: [ :index, :show ] do
     resources :products # Nested resources for products
   end
@@ -15,7 +18,9 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :listings, only: [ :index, :show ] # Add this line to create a /listings endpoint
+  # Only :index. ListingsController has no show action, so :show raised
+  # ActionNotFound, and the web client only calls GET /listings.
+  resources :listings, only: [ :index ]
 
   get "welcome/index"
   root "welcome#index"

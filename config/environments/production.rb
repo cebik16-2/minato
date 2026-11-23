@@ -53,21 +53,49 @@ Rails.application.configure do
   config.active_job.queue_adapter = :solid_queue
   config.solid_queue.connects_to = { database: { writing: :queue } }
 
-  # Ignore bad email addresses and do not raise email delivery errors.
-  # Set this to true and configure the email server for immediate delivery to raise delivery errors.
-  # config.action_mailer.raise_delivery_errors = false
+  # Host of this API, for example api.example.com. Set APP_HOST in the deploy
+  # environment. It builds the links in mails and the absolute file URLs.
+  app_host = ENV.fetch("APP_HOST", "localhost")
 
-  # Set host to be used by links generated in mailer templates.
-  config.action_mailer.default_url_options = { host: "yourdomain.com", protocol: "https" }
+  # Absolute URLs built outside a request (Active Storage blobs) need a host.
+  # See app/serializers/file_attachment_serializer.rb.
+  Rails.application.routes.default_url_options = { host: app_host, protocol: "https" }
 
-  # Specify outgoing SMTP server. Remember to add smtp/* credentials via rails credentials:edit.
-  # config.action_mailer.smtp_settings = {
-  #   user_name: Rails.application.credentials.dig(:smtp, :user_name),
-  #   password: Rails.application.credentials.dig(:smtp, :password),
-  #   address: "smtp.example.com",
-  #   port: 587,
-  #   authentication: :plain
-  # }
+  # Links in mails point at this API host. User has :confirmable, so a broken
+  # mailer means nobody can confirm an account.
+  config.action_mailer.default_url_options = { host: app_host, protocol: "https" }
+
+  # Delivery stays non-raising: a mail server outage must not take the API
+  # down. The trade-off is that with :confirmable a broken SMTP silently stops
+  # new accounts from being confirmed, so watch the delivery logs.
+  config.action_mailer.raise_delivery_errors = false
+  config.action_mailer.perform_deliveries = true
+
+  # SMTP settings come from the environment. No credentials in the repository.
+  # Set SMTP_ADDRESS, and SMTP_PORT, SMTP_DOMAIN, SMTP_USERNAME,
+  # SMTP_PASSWORD, SMTP_AUTHENTICATION as needed. When SMTP_ADDRESS is not
+  # set, Rails keeps its default server and every delivery fails: :confirmable
+  # then does not work, so set SMTP_ADDRESS in production.
+  if ENV["SMTP_ADDRESS"].present?
+    smtp_user = ENV["SMTP_USERNAME"]
+    smtp_password = ENV["SMTP_PASSWORD"]
+
+    smtp_settings = {
+      address: ENV.fetch("SMTP_ADDRESS"),
+      port: ENV.fetch("SMTP_PORT", "587").to_i,
+      domain: ENV.fetch("SMTP_DOMAIN", app_host),
+      enable_starttls_auto: true
+    }
+
+    if smtp_user.present? && smtp_password.present?
+      smtp_settings[:user_name] = smtp_user
+      smtp_settings[:password] = smtp_password
+      smtp_settings[:authentication] = ENV.fetch("SMTP_AUTHENTICATION", "plain").to_sym
+    end
+
+    config.action_mailer.delivery_method = :smtp
+    config.action_mailer.smtp_settings = smtp_settings
+  end
 
   # Enable locale fallbacks for I18n (makes lookups for any locale fall back to
   # the I18n.default_locale when a translation cannot be found).

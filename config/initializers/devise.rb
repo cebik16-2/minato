@@ -13,8 +13,19 @@ Devise.setup do |config|
 
   config.navigational_formats = [ :json ]
 
+  # The JWT signing key must come from the environment. A silent fallback to
+  # secret_key_base hides a missing key and reuses the app-wide key to sign
+  # tokens, so in production a missing key stops the boot. Outside production
+  # the fallback keeps local setups and CI running.
+  jwt_secret = ENV["DEVISE_JWT_SECRET_KEY"]
+  if jwt_secret.blank?
+    raise "DEVISE_JWT_SECRET_KEY is not set. Refusing to sign JWTs with secret_key_base in production." if Rails.env.production?
+
+    jwt_secret = Rails.application.secret_key_base
+  end
+
   config.jwt do |jwt|
-    jwt.secret = ENV["DEVISE_JWT_SECRET_KEY"] || Rails.application.credentials.secret_key_base
+    jwt.secret = jwt_secret
     jwt.dispatch_requests = [ [ "POST", %r{^/users/sign_in$} ] ]
     jwt.revocation_requests = [ [ "DELETE", %r{^/users/sign_out$} ] ]
     jwt.expiration_time = 1.day.to_i
@@ -22,12 +33,19 @@ Devise.setup do |config|
 
   config.skip_session_storage = [ :http_auth ]
 
-  # The secret key used by Devise. Devise uses this key to generate
-  # random tokens. Changing this key will render invalid all existing
-  # confirmation, reset password and unlock tokens in the database.
-  # jwt.secret = ENV['DEVISE_JWT_SECRET_KEY'] || Rails.application.credentials.secret_key_base
-  # by default. You can change it below and use your own secret key.
-  # config.secret_key = '09ebbdb1c81f5aea49b1a51d64e996abbdb830b0ce8270003c6d521ed316a0581d97c38155dc0e4560eb92bc2417a0fd788c2a87cb05786ad5fede7d1bc6e494'
+  # The secret key Devise uses to generate confirmation, reset password and
+  # unlock tokens. Changing it invalidates the tokens already in the database.
+  # The value that used to sit in this file was a real key and it is public
+  # now, so it is gone and no replacement is hardcoded here. Set
+  # DEVISE_SECRET_KEY in the deploy environment; in production a missing value
+  # stops the boot. Elsewhere Devise falls back to secret_key_base, which is
+  # also its default when secret_key is not set.
+  config.secret_key = ENV.fetch("DEVISE_SECRET_KEY") do
+    raise "DEVISE_SECRET_KEY is not set. Refusing to start in production without a Devise secret key." if Rails.env.production?
+
+    Rails.application.secret_key_base
+  end
+
   # ==> Controller configuration
   # Configure the parent class to the devise controllers.
   # config.parent_controller = 'DeviseController'
@@ -36,7 +54,8 @@ Devise.setup do |config|
   # Configure the e-mail address which will be shown in Devise::Mailer,
   # note that it will be overwritten if you use your own mailer class
   # with default "from" parameter.
-  config.mailer_sender = "please-change-me-at-config-initializers-devise@example.com"
+  # Devise mails (confirmation, reset password) are sent from this address.
+  config.mailer_sender = ENV.fetch("MAILER_SENDER", "no-reply@example.com")
 
   # Configure the class responsible to send e-mails.
   # config.mailer = 'Devise::Mailer'
@@ -137,7 +156,7 @@ Devise.setup do |config|
   config.stretches = Rails.env.test? ? 1 : 12
 
   # Set up a pepper to generate the hashed password.
-  # config.pepper = '254285e45ff9a1b6a8a59deb09fd86a4583c894ac451ee15110c4755eea0e7a4ce80fb29a99ef1e4aec62a0e8e83dc8b8e2df9c22c8c6767b985a3e28a1e1911'
+  # config.pepper = 'SET_VIA_ENV_AND_NOT_COMMITTED'
 
   # Send a notification to the original email when the user's email is changed.
   # config.send_email_changed_notification = false

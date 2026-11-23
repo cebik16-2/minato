@@ -1,12 +1,18 @@
 class FileAttachmentSerializer < ActiveModel::Serializer
   attributes :url, :filename, :content_type
 
+  # Absolute URL of the blob. No host is hardcoded here. Production sets
+  # Rails.application.routes.default_url_options from APP_HOST in
+  # config/environments/production.rb.
   def url
-    Rails.logger.debug("My object: #{object.inspect}")
+    helpers = Rails.application.routes.url_helpers
 
-    # Generate the URL for the file using ActiveStorage URL helper
-    # TODO: remove host in prodzz
-    Rails.application.routes.url_helpers.rails_blob_url(object, host: "0.0.0.0:3000")
+    if Rails.application.routes.default_url_options[:host].present?
+      helpers.rails_blob_url(object)
+    else
+      # Development and test set no host. APP_HOST overrides the fallback.
+      helpers.rails_blob_url(object, host: ENV.fetch("APP_HOST", "localhost:3000"))
+    end
   end
 
   def filename
@@ -15,7 +21,7 @@ class FileAttachmentSerializer < ActiveModel::Serializer
   end
 
   def content_type
-    # Return the content type (MIME type) of the file
+    # Return the content type (MIME type) of the blob
     object.content_type
   end
 end
