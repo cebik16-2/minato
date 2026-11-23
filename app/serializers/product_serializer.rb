@@ -6,6 +6,6 @@ class ProductSerializer < ActiveModel::Serializer
   end
 
   belongs_to :category
-  belongs_to :seller, class_name: "User"  # 👈 matches `seller_id`
+  belongs_to :seller, class_name: "User", serializer: UserSerializer  # 👈 matches `seller_id`
   has_many :files, serializer: FileAttachmentSerializer
 end

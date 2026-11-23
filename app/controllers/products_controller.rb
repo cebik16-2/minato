@@ -1,8 +1,9 @@
-puts "🔥 Reloaded ProductsController at #{Time.now}"
-
 class ProductsController < ApplicationController
+  before_action :authenticate_user!, except: %i[index show]
   before_action :set_product, only: %i[show edit update destroy detach_file]
-  before_action :set_user, only: %i[new create index show]
+  before_action :authorize_owner!, only: %i[edit update destroy detach_file]
+  before_action :set_user, only: %i[index show]
+  before_action :set_current_user, only: %i[new create]
 
   def index
     @products = Product.page(params[:page]).per(params[:per])
@@ -23,7 +24,6 @@ class ProductsController < ApplicationController
   end
 
   def create
-    puts "🔥 LOADED FILE: #{__FILE__}"
     @product = @user.products.new(product_params.merge(seller_id: @user.id))
 
     if @product.save
@@ -65,6 +65,7 @@ class ProductsController < ApplicationController
     @product = Product.find(params[:id])
   end
 
+  # Read-only: params[:user_id] only selects whose products to list.
   def set_user
     if params[:user_id].present?
       @user = User.find_by(id: params[:user_id])
@@ -72,6 +73,18 @@ class ProductsController < ApplicationController
     else
       @user = current_user
     end
+  end
+
+  # Write path: never read params[:user_id]. The seller is always the caller.
+  def set_current_user
+    @user = current_user
+  end
+
+  # Only the seller of a product may change or remove it.
+  def authorize_owner!
+    return if @product.seller_id == current_user.id
+
+    render json: { error: "Forbidden" }, status: :forbidden
   end
 
   def product_params

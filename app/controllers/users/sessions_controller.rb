@@ -5,17 +5,14 @@ module Users
 
     private
 
-    # ✅ FIX: Ensure JWT token is retrieved and logged properly
+    # Never log the email or the JWT: both are sensitive / live credentials.
     def respond_with(resource, _opts = {})
       token = request.env["warden-jwt_auth.token"]
-
-      Rails.logger.info "🔹 User Login Attempt: #{resource.email}" # ✅ Log user login
-      Rails.logger.info "🔹 JWT Token Generated: #{token}" if token.present? # ✅ Log token
 
       if token.present?
         render json: {
           message: "Logged in successfully",
-          user: resource.as_json(except: [ :encrypted_password, :reset_password_token, :reset_password_sent_at, :remember_created_at ]),
+          user: UserSerializer.new(resource).as_json,
           token: token
         }, status: :ok
       else
@@ -24,14 +21,13 @@ module Users
       end
     end
 
-    # ✅ FIX: Ensure Devise properly logs out the user
     def respond_to_on_destroy
-      jwt_payload = request.env["warden-jwt_auth.token"]
-      Rails.logger.info "🔹 Logout Attempt - JWT Payload: #{jwt_payload.inspect}" if jwt_payload
+      # Capture the user before sign_out: current_user is nil afterwards.
+      user = current_user
 
-      if current_user
-        sign_out(current_user)
-        Rails.logger.info "✅ User logged out: #{current_user.email}"
+      if user
+        sign_out(user)
+        Rails.logger.info "✅ User logged out"
         render json: { message: "Logged out successfully." }, status: :ok
       else
         Rails.logger.error "🚨 ERROR: No active session found for logout."
