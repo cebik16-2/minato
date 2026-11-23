@@ -1,5 +1,9 @@
 # See https://git-scm.com/docs/gitattributes for more about git attribute files.
 
+# Normalize line endings: LF in the repository and LF in the working tree.
+# Run `git add --renormalize .` once to apply this rule to existing files.
+* text=auto eol=lf
+
 # Mark the database schema as having been generated.
 db/schema.rb linguist-generated
 

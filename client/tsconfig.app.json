@@ -16,6 +16,9 @@
     "jsx": "react-jsx",
 
     /* Linting */
+    // NOTE: allowJs is off, so the 65 .jsx files in src are NOT type-checked.
+    // `tsc -b` only validates vite-env.d.ts today. Enable allowJs (and fix the
+    // resulting errors) only if this app is migrated to TypeScript.
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,

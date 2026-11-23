@@ -34,10 +34,6 @@ client/dist/
 tmp/
 .kamal/secrets
 
-# Package manager lock files
-package-lock.json
-client/package-lock.json
-
 # Public generated files
 client/public/manifest.json
 client/.next/
